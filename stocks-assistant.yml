@@ -110,4 +110,4 @@ dependencies:
     - requests==2.28.0
     - urllib3==1.26.9
     - yfinance==0.1.72
-prefix: D:\Users\Vienna\miniconda3\envs\stocks-assistant
+prefix: ~\miniconda3\envs\stocks-assistant
