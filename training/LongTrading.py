@@ -14,16 +14,16 @@ class LongTrading:
 
     def buy(self, buying_number, stock_price):
         """
-        ロングで株を購入する
+        ロングで株を買う
         Args:
-            buying_number (int): これから購入する株数
-            stock_price (float): 購入株価
+            buying_number (int): 今回買う株数
+            stock_price (float): 買う時の株価
         Returns:
-            float: 購入後の持っている株の総額
-            int: 購入後の持っている株数
+            float: 買った後に持っている株の総額
+            int: 買った後に持っている株数
         """
 
-        # 現在持っている株数と購入株数とも0の場合、実際何も行われない
+        # 買う株数が0の場合、実際何も行われない
         if buying_number == 0:
             return (0.0, 0)
 
@@ -32,6 +32,26 @@ class LongTrading:
 
         return (self.total_amount_now, self.number_now)
 
-    # ロングのイグジットをする
-    def sell():
-        return None
+    def sell(self, selling_number, stock_price):
+        """
+        ロングで株を売る
+        Args:
+            selling_number (int): 今回売る株数
+            stock_price (float): 売る時の株価
+        Returns:
+            float: 売った後の持っている株の総額
+            int: 売った後の持っている株数
+            float: 損益
+        """
+
+        if selling_number > self.number_now:
+            return (0.0, 0, 0.0)
+
+        if selling_number == 0:
+            return (0.0, 0, 0.0)
+
+        profit = (stock_price - self.total_amount_now / self.number_now) * selling_number
+        self.total_amount_now = self.total_amount_now - selling_number * self.total_amount_now / self.number_now
+        self.number_now = self.number_now - selling_number
+
+        return (self.total_amount_now, self.number_now, profit)
