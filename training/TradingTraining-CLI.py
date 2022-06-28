@@ -24,3 +24,34 @@ if __name__ == "__main__":
     print('end_date=' + str(end_date))
     print('lot=' + str(lot))
     print('assets=' + str(assets))
+
+    # トレード開始。取引するたびに一回入力する
+    while True:
+        input_str = input("入力フォーマット「yyyymmdd 空売りロット数-買いロット数」：")
+        if input_str == "exit":
+            break
+
+        trading_operation = input_str.split()
+        if len(trading_operation) != 2:
+            print('入力不正')
+            continue
+
+        trading_date_str = trading_operation[0]
+        stock_lots_str = trading_operation[1]
+
+        stock_lots = stock_lots_str.split('-')
+        if len(stock_lots) != 2:
+            print('入力不正')
+            continue
+
+        try:
+            trading_date = dt.datetime.strptime(trading_date_str, '%Y%m%d')
+            short_lot = int(stock_lots[0])
+            long_lot = int(stock_lots[1])
+
+            print('trading_date:' + str(trading_date))
+            print('short_lot:' + str(short_lot))
+            print('long_lot:' + str(long_lot))
+        except:
+            print('入力不正')
+        
