@@ -1,5 +1,6 @@
 import argparse
 import datetime as dt
+import Trading as tr
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='トレード練習ツール(CLIプロトタイプ版)')
@@ -19,11 +20,19 @@ if __name__ == "__main__":
     lot = 100 if args.l == None else int(args.l)
     assets = 10000000 if args.a == None else int(args.a)
 
+    # 起動時入力された引数に関する動作確認
     print('code=' + args.code)
     print('start_date=' + str(start_date))
     print('end_date=' + str(end_date))
     print('lot=' + str(lot))
     print('assets=' + str(assets))
+
+
+    trading = tr.Trading(args.code, start_date, end_date)
+
+    # 株価データ取得に関する動作確認
+    stock_data = trading.stock_data
+    print(stock_data)
 
     # トレード開始。取引するたびに一回入力する
     while True:
@@ -49,7 +58,8 @@ if __name__ == "__main__":
             short_lot = int(stock_lots[0])
             long_lot = int(stock_lots[1])
 
-            print('trading_date:' + str(trading_date))
+            # 取引ごとの入力に関する動作確認
+            print('trading_date:' + str(trading_date.date()))
             print('short_lot:' + str(short_lot))
             print('long_lot:' + str(long_lot))
         except:
