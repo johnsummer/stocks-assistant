@@ -34,6 +34,9 @@ if __name__ == "__main__":
     stock_data = trading.stock_data
     print(stock_data)
 
+    # 取引記録のファイル出力に関する動作確認用の変数
+    i = 0
+
     # トレード開始。取引するたびに一回入力する
     while True:
         input_str = input("入力フォーマット「yyyymmdd 空売りロット数-買いロット数」：")
@@ -62,6 +65,13 @@ if __name__ == "__main__":
             print('trading_date:' + str(trading_date.date()))
             print('short_lot:' + str(short_lot))
             print('long_lot:' + str(long_lot))
+
+            trading.one_transaction(trading_date, short_lot, long_lot)
+
         except:
             print('入力不正')
         
+        # 取引記録のファイル出力に関する動作確認
+        i = i + 1
+        if (i % 2 == 0):
+            trading.output_transaction_list()
