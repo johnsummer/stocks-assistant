@@ -17,21 +17,21 @@ if __name__ == "__main__":
     start_date_str = '20180101' if args.s == None else args.s
     start_date = dt.datetime.strptime(start_date_str, '%Y%m%d').date()
     end_date = dt.datetime.now().date() if args.e == None else dt.datetime.strptime(args.e, '%Y%m%d').date()
-    lot = 100 if args.l == None else int(args.l)
+    lot_volumn = 100 if args.l == None else int(args.l)
     assets = 10000000 if args.a == None else int(args.a)
 
     # 起動時入力された引数に関する動作確認
     print('code=' + args.code)
     print('start_date=' + str(start_date))
     print('end_date=' + str(end_date))
-    print('lot=' + str(lot))
+    print('lot=' + str(lot_volumn))
     print('assets=' + str(assets))
 
 
-    trading = tr.Trading(args.code, start_date, end_date)
+    trading = tr.Trading(args.code, start_date, end_date, assets)
 
     # 株価データ取得に関する動作確認
-    stock_data = trading.stock_data
+    stock_data = trading.stock_data_df
     print(stock_data)
 
     # 取引記録のファイル出力に関する動作確認用の変数
@@ -62,16 +62,16 @@ if __name__ == "__main__":
             long_lot = int(stock_lots[1])
 
             # 取引ごとの入力に関する動作確認
-            print('trading_date:' + str(trading_date.date()))
-            print('short_lot:' + str(short_lot))
-            print('long_lot:' + str(long_lot))
+            # print('trading_date:' + str(trading_date.date()))
+            # print('short_lot:' + str(short_lot))
+            # print('long_lot:' + str(long_lot))
 
-            trading.one_transaction(trading_date, short_lot, long_lot)
+            trading.one_transaction(trading_date, short_lot, long_lot, lot_volumn)
 
         except:
             print('入力不正')
         
         # 取引記録のファイル出力に関する動作確認
-        i = i + 1
-        if (i % 2 == 0):
-            trading.output_transaction_list()
+        # i = i + 1
+        # if (i % 2 == 0):
+        #     trading.output_transaction_list()
