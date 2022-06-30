@@ -59,7 +59,7 @@ class Trading:
         self.transactions_csv =  'output/transaction_history_' + self.code + '_' + self.start_date.strftime('%Y%m%d') + '_' + self.end_date.strftime('%Y%m%d') + '.csv'
         if not os.path.isfile(self.transactions_csv):
             with open(self.transactions_csv, 'w', newline='') as f:
-                header = ['trading_date', 'short_lot', 'long_lot']
+                header = ['trading_date', 'short_lot', 'long_lot', 'lot_volumn']
                 writer = csv.writer(f)
                 writer.writerow(header)
 
