@@ -7,10 +7,12 @@ import yfinance as yf
 
 import LongTrading as lt
 import ShortTrading as st
+import CurrentTradingInfo as cti
 
 class Trading:
 
-    transactions_list = []
+    # transactions_list = []
+    # trading_history_list = []
 
     # 株価格のデータ
     stock_data_df:pd.DataFrame = None
@@ -22,15 +24,16 @@ class Trading:
     end_date:date
 
     transactions_csv = None
+    trading_history_csv = None
 
-    # ロングトレードの情報
-    long_trading:lt.LongTrading = None
+    # # ロングトレードの情報
+    # long_trading:lt.LongTrading = None
 
-    # ショートトレードの情報
-    short_trading:st.ShortTrading = None
+    # # ショートトレードの情報
+    # short_trading:st.ShortTrading = None
 
-    # 総資産
-    assets = 0.0
+    # 最新取引の情報
+    current_trading_info:cti.CurrentTradingInfoModel
 
     def __init__(self, code:str, start_date:date, end_date:date, assets:float=0.0) -> None:
         """
@@ -46,7 +49,6 @@ class Trading:
         self.code = code
         self.start_date = start_date
         self.end_date = end_date
-        self.assets = assets
 
         # yfinanceの仕様的に指定した終了日付の前日までデータを取得してくるので、1日を追加する
         end_date = end_date + timedelta(days=1)
@@ -55,7 +57,7 @@ class Trading:
         end_str = end_date.strftime('%Y-%m-%d')
         self.stock_data_df = yf.download(code + '.T', start=start_str, end=end_str, interval = "1d")
 
-        # 取引履歴を保存するcsvファイルを初期化する
+        # 入力履歴を保存するcsvファイルを初期化する
         self.transactions_csv =  'output/transaction_history_' + self.code + '_' + self.start_date.strftime('%Y%m%d') + '_' + self.end_date.strftime('%Y%m%d') + '.csv'
         if not os.path.isfile(self.transactions_csv):
             with open(self.transactions_csv, 'w', newline='') as f:
@@ -63,8 +65,18 @@ class Trading:
                 writer = csv.writer(f)
                 writer.writerow(header)
 
-        self.long_trading = lt.LongTrading()
-        self.short_trading = st.ShortTrading()
+        # トレード履歴を保存するcsvファイルを初期化する
+        self.trading_history_csv =  'output/trading_history_' + self.code + '_' + self.start_date.strftime('%Y%m%d') + '_' + self.end_date.strftime('%Y%m%d') + '.csv'
+        if not os.path.isfile(self.trading_history_csv):
+            with open(self.trading_history_csv, 'w', newline='') as f:
+                header = ['取引日付', '株価', '買い株数', '保有株数', '平均取得単価', 'ロング損益', '空売り株数', '空売り中の株数', '平均売り単価', 'ショート損益', '総資産']
+                writer = csv.writer(f)
+                writer.writerow(header)
+
+        self.current_trading_info = cti.CurrentTradingInfoModel()
+        self.current_trading_info.assets = assets
+        # self.long_trading = lt.LongTrading()
+        # self.short_trading = st.ShortTrading()
 
     def one_transaction(self, trading_date:date, short_lot:int, long_lot:int, lot_volumn:int=100):
         """
@@ -85,78 +97,111 @@ class Trading:
             stock_price = float(stock_data['Adj Close'])
             # print(stock_price)
 
-            transaction = [trading_date.strftime('%Y-%m-%d'), str(short_lot), str(long_lot)]
-            self.transactions_list.append(transaction)
-
             # ショート売買
             short_lot_volumn = short_lot * lot_volumn
-            short_transaction_number = short_lot_volumn - self.short_trading.number_now
+            short_transaction_number = short_lot_volumn - self.current_trading_info.short_trading.number_now
             short_profit = 0
             if short_transaction_number > 0: 
-                self.short_trading.short_sell(short_transaction_number, stock_price)
+                self.current_trading_info.short_trading.short_sell(short_transaction_number, stock_price)
             else:
-                short_profit = self.short_trading.short_cover(0 - short_transaction_number, stock_price)
+                short_profit = self.current_trading_info.short_trading.short_cover(0 - short_transaction_number, stock_price)
 
             # ロング売買
             long_lot_volumn = long_lot * lot_volumn
-            long_transaction_number = long_lot_volumn - self.long_trading.number_now
+            long_transaction_number = long_lot_volumn - self.current_trading_info.long_trading.number_now
             long_profit = 0
             if long_transaction_number > 0:
-                self.long_trading.buy(long_transaction_number, stock_price)
+                self.current_trading_info.long_trading.buy(long_transaction_number, stock_price)
             else:
-                long_profit = self.long_trading.sell(0 - long_transaction_number, stock_price)
+                long_profit = self.current_trading_info.long_trading.sell(0 - long_transaction_number, stock_price)
+
+            # 本取引の情報を最新取引情報として保存する
+            self.current_trading_info.trading_date = trading_date
+            self.current_trading_info.stock_price = stock_price
+            self.current_trading_info.short_lot = short_lot
+            self.current_trading_info.short_transaction_number = short_transaction_number
+            self.current_trading_info.long_lot = long_lot
+            self.current_trading_info.long_transaction_number = long_transaction_number
+            self.current_trading_info.short_profit = short_profit
+            self.current_trading_info.long_profit = long_profit
 
             # 利益を総資産に加算
-            self.assets = self.assets + short_profit + long_profit
+            self.current_trading_info.assets = self.current_trading_info.assets + short_profit + long_profit
 
             # 取引記録のファイルを出力
-            if short_lot == 0 and long_lot == 0:
-                self.output_transaction_list()
+            self.__output_transaction_input_to_csv()
+            self.__output_trading_info_to_csv()
 
-            self.__display_transaction_detail(trading_date, stock_price, short_transaction_number, long_transaction_number, short_profit, long_profit)
+            self.__display_transaction_detail()
 
         except Exception as e:
             print(e)
 
+    # 取引の入力情報をcsvファイルに書き出す
+    def __output_transaction_input_to_csv(self):
 
-    def output_transaction_list(self):
-        """
-        メモリに溜まっている取引のデータをcsvファイルに書き出す。書き出したらメモリをクリアする。
-        Args:
-            None
-        Returns:
-            None
-        """
-
-        if len(self.transactions_list) == 0:
-            return
+        transaction = [
+            self.current_trading_info.trading_date.strftime('%Y-%m-%d'), 
+            str(self.current_trading_info.short_lot), 
+            str(self.current_trading_info.long_lot)
+        ]
 
         with open(self.transactions_csv, 'a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerows(self.transactions_list)
-        # f.close()
+            writer.writerow(transaction)
 
-        self.transactions_list = []
-        return
-
-    # 1取引を行った後のトレード詳細情報を表示する
-    def __display_transaction_detail(self, trading_date, stock_price, short_transaction_number, long_transaction_number, short_profit, long_profit):
+    # トレード履歴をcsvファイルに書き出す
+    def __output_trading_info_to_csv(self):
 
         # 平均単価が0の場合は0で出力する
-        avg_short_price = 0 if self.short_trading.number_now == 0 else self.short_trading.total_amount_now / self.short_trading.number_now
-        avg_long_price = 0 if self.long_trading.number_now == 0 else self.long_trading.total_amount_now / self.long_trading.number_now
+        avg_short_price = 0
+        if self.current_trading_info.short_trading.number_now != 0:
+            avg_short_price = self.current_trading_info.short_trading.total_amount_now / self.current_trading_info.short_trading.number_now
+        avg_long_price = 0
+        if self.current_trading_info.long_trading.number_now != 0:
+            avg_long_price = self.current_trading_info.long_trading.total_amount_now / self.current_trading_info.long_trading.number_now
 
-        print('取引日付：' + trading_date.strftime('%Y-%m-%d'))
-        print('株価(終値)：' + f'{stock_price:,.1f}')
+        trading_info = [
+            self.current_trading_info.trading_date.strftime('%Y-%m-%d'),
+            str(self.current_trading_info.stock_price),
+            str(self.current_trading_info.long_transaction_number),
+            str(self.current_trading_info.long_trading.number_now),
+            str(avg_long_price),
+            str(self.current_trading_info.long_profit),
+            str(self.current_trading_info.short_transaction_number),
+            str(self.current_trading_info.short_trading.number_now),
+            str(avg_short_price),
+            str(self.current_trading_info.short_profit),
+            str(self.current_trading_info.assets)
+        ]
+
+        with open(self.trading_history_csv, 'a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(trading_info)
+
+    # 1取引を行った後のトレード詳細情報を表示する
+    def __display_transaction_detail(self):
+
+        # 平均単価が0の場合は0で出力する
+        avg_short_price = 0
+        if self.current_trading_info.short_trading.number_now != 0:
+            avg_short_price = self.current_trading_info.short_trading.total_amount_now / self.current_trading_info.short_trading.number_now
+        avg_long_price = 0
+        if self.current_trading_info.long_trading.number_now != 0:
+            avg_long_price = self.current_trading_info.long_trading.total_amount_now / self.current_trading_info.long_trading.number_now
+
+        print('取引日付：' + self.current_trading_info.trading_date.strftime('%Y-%m-%d'))
+        print('株価(終値)：' + f'{self.current_trading_info.stock_price:,.1f}')
         print('---------------------')
         print('平均売り単価：' + f'{avg_short_price:,.1f}')
-        print('空売り株数：' + str(short_transaction_number))
-        print('空売り中の総株数：' + str(self.short_trading.number_now))
-        print('損益(ショート)：' + f'{short_profit:,.2f}')
+        print('空売り株数：' + str(self.current_trading_info.short_transaction_number))
+        print('空売り中の総株数：' + str(self.current_trading_info.short_trading.number_now))
+        print('損益(ショート)：' + f'{self.current_trading_info.short_profit:,.1f}')
         print('---------------------')
         print('平均取得単価：' + f'{avg_long_price:,.1f}')
-        print('買い株数：' + str(long_transaction_number))
-        print('保有株数：' + str(self.long_trading.number_now))
-        print('損益(ロング)：' + f'{long_profit:,.2f}')
+        print('買い株数：' + str(self.current_trading_info.long_transaction_number))
+        print('保有株数：' + str(self.current_trading_info.long_trading.number_now))
+        print('損益(ロング)：' + f'{self.current_trading_info.long_profit:,.1f}')
         print('---------------------')
-        print('総資産：' + f'{self.assets:,.2f}')
+        print('総資産：' + f'{self.current_trading_info.assets:,.1f}')
+        print('---------------------')
