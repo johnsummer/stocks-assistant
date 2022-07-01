@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     # トレード開始。取引するたびに一回入力する
     while True:
-        input_str = input("入力フォーマット「yyyymmdd 空売りロット数-買いロット数」：")
+        input_str = input("★入力フォーマット「yyyymmdd 空売りロット数-買いロット数」：")
         if input_str == "exit":
             break
 

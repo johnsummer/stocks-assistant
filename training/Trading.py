@@ -59,7 +59,7 @@ class Trading:
         self.transactions_csv =  'output/transaction_history_' + self.code + '_' + self.start_date.strftime('%Y%m%d') + '_' + self.end_date.strftime('%Y%m%d') + '.csv'
         if not os.path.isfile(self.transactions_csv):
             with open(self.transactions_csv, 'w', newline='') as f:
-                header = ['trading_date', 'short_lot', 'long_lot', 'lot_volumn']
+                header = ['trading_date', 'short_lot', 'long_lot']
                 writer = csv.writer(f)
                 writer.writerow(header)
 
@@ -85,7 +85,7 @@ class Trading:
             stock_price = float(stock_data['Adj Close'])
             # print(stock_price)
 
-            transaction = [trading_date.strftime('%Y-%m-%d'), str(short_lot), str(long_lot), str(lot_volumn)]
+            transaction = [trading_date.strftime('%Y-%m-%d'), str(short_lot), str(long_lot)]
             self.transactions_list.append(transaction)
 
             # ショート売買
@@ -113,16 +113,15 @@ class Trading:
             if short_lot == 0 and long_lot == 0:
                 self.output_transaction_list()
 
+            self.__display_transaction_detail(trading_date, stock_price, short_transaction_number, long_transaction_number, short_profit, long_profit)
+
         except Exception as e:
             print(e)
 
-        print(trading_date.strftime('%Y-%m-%d') + ', ' + str(stock_price) + ', ' 
-            + str(short_lot_volumn) + '-' + str(long_lot_volumn) + ', ' 
-            + str(short_profit) + ', ' + str(long_profit) + ', ' + str(self.assets))
 
     def output_transaction_list(self):
         """
-        メモリに溜まっている取引のデータをcsvファイルに書き出す
+        メモリに溜まっている取引のデータをcsvファイルに書き出す。書き出したらメモリをクリアする。
         Args:
             None
         Returns:
@@ -139,3 +138,25 @@ class Trading:
 
         self.transactions_list = []
         return
+
+    # 1取引を行った後のトレード詳細情報を表示する
+    def __display_transaction_detail(self, trading_date, stock_price, short_transaction_number, long_transaction_number, short_profit, long_profit):
+
+        # 平均単価が0の場合は0で出力する
+        avg_short_price = 0 if self.short_trading.number_now == 0 else self.short_trading.total_amount_now / self.short_trading.number_now
+        avg_long_price = 0 if self.long_trading.number_now == 0 else self.long_trading.total_amount_now / self.long_trading.number_now
+
+        print('取引日付：' + trading_date.strftime('%Y-%m-%d'))
+        print('株価(終値)：' + f'{stock_price:,.1f}')
+        print('---------------------')
+        print('平均売り単価：' + f'{avg_short_price:,.1f}')
+        print('空売り株数：' + str(short_transaction_number))
+        print('空売り中の総株数：' + str(self.short_trading.number_now))
+        print('損益(ショート)：' + f'{short_profit:,.2f}')
+        print('---------------------')
+        print('平均取得単価：' + f'{avg_long_price:,.1f}')
+        print('買い株数：' + str(long_transaction_number))
+        print('保有株数：' + str(self.long_trading.number_now))
+        print('損益(ロング)：' + f'{long_profit:,.2f}')
+        print('---------------------')
+        print('総資産：' + f'{self.assets:,.2f}')
