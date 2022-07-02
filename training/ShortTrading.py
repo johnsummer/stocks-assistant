@@ -24,12 +24,12 @@ class ShortTrading:
         """
         # 空売り株数が0の場合、実際何も行われない
         if selling_number == 0:
-            return (0.0, 0)
+            return
 
         self.total_amount_now = self.total_amount_now + selling_number * stock_price
         self.number_now = self.number_now + selling_number
 
-        return (self.total_amount_now, self.number_now)
+        return
 
     def short_cover(self, short_covering_number, stock_price):
         """
@@ -44,13 +44,13 @@ class ShortTrading:
         """
 
         if short_covering_number > self.number_now:
-            return (0.0, 0, 0.0)
+            return 0.0
 
         if short_covering_number == 0:
-            return (0.0, 0, 0.0)
+            return 0.0
 
         profit = (self.total_amount_now / self.number_now - stock_price) * short_covering_number
         self.total_amount_now = self.total_amount_now - short_covering_number * self.total_amount_now / self.number_now
         self.number_now = self.number_now - short_covering_number
 
-        return (self.total_amount_now, self.number_now, profit)
+        return profit

@@ -25,12 +25,12 @@ class LongTrading:
 
         # 買う株数が0の場合、実際何も行われない
         if buying_number == 0:
-            return (0.0, 0)
+            return
 
         self.total_amount_now = self.total_amount_now + buying_number * stock_price
         self.number_now = self.number_now + buying_number
 
-        return (self.total_amount_now, self.number_now)
+        return
 
     def sell(self, selling_number, stock_price):
         """
@@ -45,13 +45,13 @@ class LongTrading:
         """
 
         if selling_number > self.number_now:
-            return (0.0, 0, 0.0)
+            return 0.0
 
         if selling_number == 0:
-            return (0.0, 0, 0.0)
+            return 0.0
 
         profit = (stock_price - self.total_amount_now / self.number_now) * selling_number
         self.total_amount_now = self.total_amount_now - selling_number * self.total_amount_now / self.number_now
         self.number_now = self.number_now - selling_number
 
-        return (self.total_amount_now, self.number_now, profit)
+        return profit
