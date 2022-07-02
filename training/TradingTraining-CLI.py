@@ -9,7 +9,7 @@ if __name__ == "__main__":
     parser.add_argument('-s', help='トレード開始日付(yyyymmdd)。デフォルトは2018/01/01')
     parser.add_argument('-e', help='トレード終了日付(yyyymmdd)。デフォルトは実行日付')
     parser.add_argument('-l', help='1ロットの株数。デフォルトは100株')
-    parser.add_argument('-a', help='トレード用の想定金額(初期資産)。デフォルトは200万(円)')
+    parser.add_argument('-a', help='トレード用の想定金額(初期資産)。デフォルトは1000万(円)')
 
     args = parser.parse_args()
 
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     start_date = dt.datetime.strptime(start_date_str, '%Y%m%d').date()
     end_date = dt.datetime.now().date() if args.e == None else dt.datetime.strptime(args.e, '%Y%m%d').date()
     lot_volumn = 100 if args.l == None else int(args.l)
-    assets = 2000000 if args.a == None else int(args.a)
+    assets = 10000000 if args.a == None else int(args.a)
 
     # 起動時入力された引数に関する動作確認
     print('code=' + args.code)
@@ -27,15 +27,16 @@ if __name__ == "__main__":
     print('lot=' + str(lot_volumn))
     print('assets=' + str(assets))
 
-
+    print('データ読み込み中。。。')
     trading = tr.Trading(args.code, start_date, end_date, assets)
+    print('データ読み込み完了。')
 
     # 株価データ取得に関する動作確認
-    stock_data = trading.stock_data_df
-    print(stock_data)
+    # stock_data = trading.stock_data_df
+    # print(stock_data)
 
     # 取引記録のファイル出力に関する動作確認用の変数
-    i = 0
+    # i = 0
 
     # トレード開始。取引するたびに一回入力する
     while True:
