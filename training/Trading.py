@@ -94,7 +94,7 @@ class Trading:
                 print("入力された日付のデータはない。その日は祝日か、取得期間外の日付かもしれない。")
                 return
             
-            stock_price = float(stock_data['Adj Close'])
+            stock_price = float(stock_data['Close'])
             # print(stock_price)
 
             # ショート売買
