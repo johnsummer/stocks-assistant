@@ -38,9 +38,26 @@ if __name__ == "__main__":
     # 取引記録のファイル出力に関する動作確認用の変数
     # i = 0
 
+    # 取引入力における日付の年の部分。Noneでなければ設定されているとする。その場合は年の入力を省くことができる。
+    trading_date_year:str = None
+
     # トレード開始。取引するたびに一回入力する
     while True:
         input_str = input("★入力フォーマット「yyyymmdd 空売りロット数-買いロット数」：")
+
+        # 取引以外の操作
+        # 取引入力時の年を固定で設定する
+        if input_str.startswith("y="):
+            input = input_str.split('=')
+            if len(input != 2):
+                print('入力不正')
+                continue
+
+            trading_date_year = input[1]
+            # TODO: 入力チェック
+            continue
+
+        # アプリを終了させる
         if input_str == "exit":
             break
 
@@ -49,6 +66,7 @@ if __name__ == "__main__":
             print('入力不正')
             continue
 
+        # TODO: 設定された年を使う
         trading_date_str = trading_operation[0]
         stock_lots_str = trading_operation[1]
 
