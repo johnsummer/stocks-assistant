@@ -1,6 +1,7 @@
 import argparse
 import datetime as dt
 import Trading as tr
+import re
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='トレード練習ツール(CLIプロトタイプ版)')
@@ -31,9 +32,9 @@ if __name__ == "__main__":
     trading = tr.Trading(args.code, start_date, end_date, assets)
     print('データ読み込み完了。')
 
-    # 株価データ取得に関する動作確認
-    # stock_data = trading.stock_data_df
-    # print(stock_data)
+    # 取得できた株価データの範囲を確認するためにCLIでDataFrameを表示する
+    stock_data = trading.stock_data_df
+    print(stock_data)
 
     # 取引記録のファイル出力に関する動作確認用の変数
     # i = 0
@@ -48,31 +49,48 @@ if __name__ == "__main__":
         # 取引以外の操作
         # 取引入力時の年を固定で設定する
         if input_str.startswith("y="):
-            input = input_str.split('=')
-            if len(input != 2):
-                print('入力不正')
-                continue
+            year_setting_input = input_str.split('=')
+            if len(year_setting_input) == 2:
+                trading_date_year = year_setting_input[1]
+                
+                print("year=" + trading_date_year)
 
-            trading_date_year = input[1]
-            # TODO: 入力チェック
+                # 年の設定をリセットする
+                if trading_date_year == '':
+                    trading_date_year = None
+                    continue
+
+                # 入力チェック
+                if not re.compile('[0-9]{4}').search(trading_date_year):
+                    print('年のフォーマットが不正')
+                    trading_date_year = None
+            else:
+                print('年設定が入力不正')
+
             continue
 
         # アプリを終了させる
         if input_str == "exit":
             break
 
+        # 入力チェック
         trading_operation = input_str.split()
         if len(trading_operation) != 2:
-            print('入力不正')
+            print('取引情報が入力不正')
             continue
 
-        # TODO: 設定された年を使う
-        trading_date_str = trading_operation[0]
+        trading_date_str = trading_operation[0] if trading_date_year == None else trading_date_year + trading_operation[0]
         stock_lots_str = trading_operation[1]
 
+        # 日付の入力チェック（桁数だけ）
+        if not re.compile('[0-9]{8}').search(trading_date_str):
+            print('日付のフォーマットが不正')
+            continue
+
+        # ロットの入力チェック
         stock_lots = stock_lots_str.split('-')
         if len(stock_lots) != 2:
-            print('入力不正')
+            print('ロット数が入力不正')
             continue
 
         try:
