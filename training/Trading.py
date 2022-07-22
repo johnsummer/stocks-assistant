@@ -138,7 +138,7 @@ class Trading:
             # 利益を総資産に加算
             self.current_trading_info.assets = self.current_trading_info.assets + short_profit + long_profit
 
-            # トレードの状態を履歴として保存する(最大10件)
+            # トレードの状態を履歴として保存する(現在最新の取引を含め、最大11件)
             if len(self.__trading_info_history) == self.__MAX_LENGTH_OF_HISTORY:
                 self.__trading_info_history.popleft()
 
@@ -167,7 +167,7 @@ class Trading:
             None
         """
         max = self.__MAX_LENGTH_OF_HISTORY if self.__MAX_LENGTH_OF_HISTORY < len(self.__trading_info_history) else len(self.__trading_info_history)
-        max = max - 1   # 現在の最新状態を除いた後の最大の件数
+        max = max - 1   # 現在の最新状態を除いた後の最大の件数（戻す先の対象となる件数）
 
         if number > max:
             print('指定した番号は上限を超えています。現時点は最大' + str(max) + '個前の取引まで戻すことが可能です。')
