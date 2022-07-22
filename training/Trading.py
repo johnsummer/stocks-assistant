@@ -2,6 +2,8 @@ import csv
 from datetime import datetime, timedelta
 from datetime import date
 import os
+import collections
+import copy
 import pandas as pd
 import yfinance as yf
 
@@ -34,6 +36,12 @@ class Trading:
 
     # 最新取引の情報
     current_trading_info:cti.CurrentTradingInfoModel
+
+    # 直近のトレード履歴(最新10件)を保存するリスト。誤入力の際にトレードの状態を戻すために使う
+    __trading_info_history:collections.deque
+
+    # トレード履歴の一時保存の最大件数(現在最新の状態＋10件前まで)
+    __MAX_LENGTH_OF_HISTORY = 11
 
     def __init__(self, code:str, start_date:date, end_date:date, assets:float=0.0) -> None:
         """
@@ -74,6 +82,8 @@ class Trading:
                 writer.writerow(header)
 
         self.current_trading_info = cti.CurrentTradingInfoModel()
+        self.__trading_info_history = collections.deque()
+
         self.current_trading_info.assets = assets
         # self.long_trading = lt.LongTrading()
         # self.short_trading = st.ShortTrading()
@@ -128,6 +138,17 @@ class Trading:
             # 利益を総資産に加算
             self.current_trading_info.assets = self.current_trading_info.assets + short_profit + long_profit
 
+            # トレードの状態を履歴として保存する(最大10件)
+            if len(self.__trading_info_history) == self.__MAX_LENGTH_OF_HISTORY:
+                self.__trading_info_history.popleft()
+
+            current_trading_info_tmp = copy.deepcopy(self.current_trading_info)
+            self.__trading_info_history.append(current_trading_info_tmp)
+
+            # # トレードの状態を履歴として保存する処理の動作確認
+            # for current_trading_info_tmp in self.__trading_info_history:
+            #     print(str(current_trading_info_tmp.trading_date) + ' : ' + str(current_trading_info_tmp.assets))
+
             # 取引記録のファイルを出力
             self.__output_transaction_input_to_csv()
             self.__output_trading_info_to_csv()
@@ -136,6 +157,58 @@ class Trading:
 
         except Exception as e:
             print(e)
+
+    def reset_trading_info(self, number:int):
+        """
+        指定した番号に該当したトレードの状態に戻す。番号についてはshow_trading_history_in_stack()で確認できる。
+        Args:
+            number (int): 戻したい取引の個数（例：2を指定した場合は2個前の取引の状態にトレードをリセットする）
+        Returns:
+            None
+        """
+        max = self.__MAX_LENGTH_OF_HISTORY if self.__MAX_LENGTH_OF_HISTORY < len(self.__trading_info_history) else len(self.__trading_info_history)
+        max = max - 1   # 現在の最新状態を除いた後の最大の件数
+
+        if number > max:
+            print('指定した番号は上限を超えています。現時点は最大' + str(max) + '個前の取引まで戻すことが可能です。')
+            return
+        
+        if number <= 0:
+            print('1～' + str(max) + 'の整数を指定してください。')
+            return
+
+        for i in range(number):
+            self.__trading_info_history.pop()
+
+        # トレードの状態をリセットする
+        self.current_trading_info = copy.deepcopy(self.__trading_info_history[-1])
+
+        # csvファイルからも不要な行を削除する
+        df_trading_history_csv = pd.read_csv(self.trading_history_csv, encoding="shift-jis")
+        df_trading_history_csv = df_trading_history_csv[:-number]
+        df_trading_history_csv.to_csv(self.trading_history_csv, index=False, encoding="shift-jis")
+
+        df_transactions_csv = pd.read_csv(self.transactions_csv, encoding="shift-jis")
+        df_transactions_csv = df_transactions_csv[:-number]
+        df_transactions_csv.to_csv(self.transactions_csv, index=False, encoding="shift-jis")
+
+    def show_trading_history_in_stack(self):
+        """
+        戻す可能な取引の一覧を表示する。
+        Args:
+            None
+        Returns:
+            None
+        """
+        print("※：0番は現在最新の状態です。")
+
+        i = 0
+        for current_trading_info_tmp in reversed(self.__trading_info_history):
+            print(str(i) + ' : ' + current_trading_info_tmp.trading_date.strftime('%Y-%m-%d') 
+                + ', ショートロット: ' + str(current_trading_info_tmp.short_lot) 
+                + ', ロングロット：' + str(current_trading_info_tmp.long_lot) 
+                + ', 総資産：' + f'{current_trading_info_tmp.assets:,.1f}')
+            i = i + 1
 
     # 取引の入力情報をcsvファイルに書き出す
     def __output_transaction_input_to_csv(self):
