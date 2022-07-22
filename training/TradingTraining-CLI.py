@@ -47,7 +47,7 @@ if __name__ == "__main__":
         input_str = input("★入力フォーマット「yyyymmdd 空売りロット数-買いロット数」：")
 
         # 取引以外の操作
-        # 取引入力時の年を固定で設定する
+        # 取引入力時の年を固定で設定するコマンド
         if input_str.startswith("y="):
             year_setting_input = input_str.split('=')
             if len(year_setting_input) == 2:
@@ -69,10 +69,26 @@ if __name__ == "__main__":
 
             continue
 
-        # アプリを終了させる
+        # トレード履歴関連のコマンド
+        if input_str.startswith("history "):
+            command_list = input_str.split()
+            if command_list[1] == "show":
+                trading.show_trading_history_in_stack()
+                continue
+            if command_list[1] == "reset":
+                if len(command_list) != 3:
+                    print('コマンド不正')
+                    continue
+                
+                number = int(command_list[2])
+                trading.reset_trading_info(number)
+                continue
+
+        # アプリを終了させるコマンド
         if input_str == "exit":
             break
 
+        # 上記のif文に該当しない場合、取引操作の解析に入る
         # 入力チェック
         trading_operation = input_str.split()
         if len(trading_operation) != 2:
