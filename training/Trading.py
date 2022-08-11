@@ -205,9 +205,8 @@ class Trading:
         i = 0
         for current_trading_info_tmp in reversed(self.__trading_info_history):
             print(str(i) + ' : ' + current_trading_info_tmp.trading_date.strftime('%Y-%m-%d') 
-                + ', ショートロット: ' + str(current_trading_info_tmp.short_lot) 
-                + ', ロングロット：' + str(current_trading_info_tmp.long_lot) 
-                + ', 総資産：' + f'{current_trading_info_tmp.assets:,.1f}')
+                + '  ' + str(current_trading_info_tmp.short_lot) + '-' + str(current_trading_info_tmp.long_lot) 
+                + '  ¥' + f'{current_trading_info_tmp.assets:,.1f}')
             i = i + 1
 
     # 取引の入力情報をcsvファイルに書き出す
