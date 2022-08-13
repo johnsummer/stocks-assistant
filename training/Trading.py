@@ -313,7 +313,7 @@ class Trading:
         print('総資産：' + f'{self.current_trading_info.assets:,.1f}' + '\t' + amount_check_message)
         print('---------------------')
 
-    # 警告モードでの、総資産超過のチェックが通らない時の処理
+    # 総資産超過のチェックが通らない時のメッセージを生成する
     def __asset_over_action(self, check_result:int, short_transaction_amount, long_transaction_amount):
 
         if check_result == amchkr.AmountChecker.CHECK_RESULT_OK:
