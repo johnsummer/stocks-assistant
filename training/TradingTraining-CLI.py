@@ -53,17 +53,18 @@ if __name__ == "__main__":
             if len(year_setting_input) == 2:
                 trading_date_year = year_setting_input[1]
                 
-                print("year=" + trading_date_year)
-
                 # 年の設定をリセットする
                 if trading_date_year == '':
                     trading_date_year = None
+                    print("yearをリセットしました")
                     continue
 
                 # 入力チェック
                 if not re.compile('[0-9]{4}').search(trading_date_year):
                     print('年のフォーマットが不正')
                     trading_date_year = None
+
+                print("year=" + trading_date_year)
             else:
                 print('年設定が入力不正')
 
@@ -83,6 +84,24 @@ if __name__ == "__main__":
                 number = int(command_list[2])
                 trading.reset_trading_info(number)
                 continue
+
+        # 総資産超過時の処理モードを設定するコマンド
+        if input_str.startswith("allow_over_asset="):
+            command_list = input_str.split('=')
+            if len(command_list) == 2:
+                value = command_list[1]
+
+                if value == 'true':
+                    trading.action_mode = trading.ACTION_MODE_WARNING
+                else:
+                    trading.action_mode = trading.ACTION_MODE_FORBIDDEN
+
+                print('allow_over_asset=' + value)
+            else:
+                print('コマンド不正')
+                
+            continue
+
 
         # アプリを終了させるコマンド
         if input_str == "exit":

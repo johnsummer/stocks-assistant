@@ -19,8 +19,7 @@ class ShortTrading:
             selling_number (int): 今回空売り株数
             stock_price (float): 空売り時の株価
         Returns:
-            float: 今回の引き取りの後、空売りによる手持ちの総金額
-            int:  今回の引き取りの後、空売りした総株数
+            None
         """
         # 空売り株数が0の場合、実際何も行われない
         if selling_number == 0:
@@ -38,8 +37,6 @@ class ShortTrading:
             short_covering_number (int): 今回買い戻す株数
             stock_price (float): 買い戻す時の株価
         Returns:
-            float: 今回買い戻した後、空売りによる手持ちの総金額
-            int: 今回買い戻した後、空売りした総株数
             float: 損益
         """
 
