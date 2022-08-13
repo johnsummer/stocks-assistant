@@ -19,8 +19,7 @@ class LongTrading:
             buying_number (int): 今回買う株数
             stock_price (float): 買う時の株価
         Returns:
-            float: 今回の引き取りの後、手持ちの株総額
-            int: 今回の引き取りの後、手持ちの総株数
+            None
         """
 
         # 買う株数が0の場合、実際何も行われない
@@ -39,8 +38,6 @@ class LongTrading:
             selling_number (int): 今回売る株数
             stock_price (float): 売る時の株価
         Returns:
-            float: 売った後の持っている株の総額
-            int: 売った後の持っている株数
             float: 損益
         """
 

@@ -133,3 +133,6 @@ dmypy.json
 
 # Local output files
 /output
+
+# VS Code configuration file
+/.vscode
