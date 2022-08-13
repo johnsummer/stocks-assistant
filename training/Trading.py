@@ -4,6 +4,7 @@ from datetime import date
 import os
 import collections
 import copy
+import traceback
 import pandas as pd
 import yfinance as yf
 
@@ -98,7 +99,7 @@ class Trading:
         # self.short_trading = st.ShortTrading()
 
         # 総資産超過チェッカーの初期化
-        self.amount_checker = amchkr.AmountChecker(self.current_trading_info)
+        self.amount_checker = amchkr.AmountChecker()
         self.action_mode = self.ACTION_MODE_FORBIDDEN
 
     def one_transaction(self, trading_date:date, short_lot:int, long_lot:int, lot_volumn:int=100):
@@ -133,13 +134,13 @@ class Trading:
             # 総資産超過のチェック
             short_transaction_amount = short_transaction_number * stock_price
             long_transaction_amount = long_transaction_number * stock_price
-            check_result = self.amount_checker.check_amount(short_transaction_amount, long_transaction_amount)
+            check_result = self.amount_checker.check_amount(self.current_trading_info, short_transaction_amount, long_transaction_amount)
 
             amount_check_message = ''
 
             # チェックが通らない場合の処理
             if check_result != amchkr.AmountChecker.CHECK_RESULT_OK:
-                amount_check_message = self.__asset_over_action(check_result, self.action_mode, short_transaction_amount, long_transaction_amount)
+                amount_check_message = self.__asset_over_action(check_result, short_transaction_amount, long_transaction_amount)
                 if check_result == amchkr.AmountChecker.CHECK_RESULT_MARGIN_TRADING_LIMIT_OVER or self.action_mode == self.ACTION_MODE_FORBIDDEN:
                     print(amount_check_message)
                     return
@@ -188,7 +189,7 @@ class Trading:
             self.__display_transaction_detail(amount_check_message)
 
         except Exception as e:
-            print(e)
+            print(traceback.format_exc())
 
     def reset_trading_info(self, number:int):
         """
@@ -309,7 +310,7 @@ class Trading:
             + '\t\t保有総額：' + f'{self.current_trading_info.long_trading.total_amount_now:,.1f}')
         print('損益(ロング)：' + f'{self.current_trading_info.long_profit:,.1f}')
         print('---------------------')
-        print('総資産：' + f'{self.current_trading_info.assets:,.1f}') + '\t' + amount_check_message
+        print('総資産：' + f'{self.current_trading_info.assets:,.1f}' + '\t' + amount_check_message)
         print('---------------------')
 
     # 警告モードでの、総資産超過のチェックが通らない時の処理
@@ -318,17 +319,16 @@ class Trading:
         if check_result == amchkr.AmountChecker.CHECK_RESULT_OK:
             return None
 
-        assets = self.current_trading_info.assets
-        short_amount_now = self.current_trading_info.short_trading.total_amount_now
-        long_amount_now = self.current_trading_info.long_trading.total_amount_now
-
         message:str
-        message_assets_info = + '現在の総資産：' + f'{assets:,.1f}'
-        + ', 注文しようとする金額：　空売り：' + f'{short_amount_now:,.1f}'
-        + ', 買い：' + f'{long_amount_now:,.1f}'
+        message_assets_info = '現在の総資産：' + f'{self.current_trading_info.assets:,.1f}' + os.linesep \
+            + 'これまでの注文総額：　空売り：' + f'{self.current_trading_info.short_trading.total_amount_now:,.1f}' \
+            + ', 買い：' + f'{self.current_trading_info.long_trading.total_amount_now:,.1f}' + os.linesep \
+            + '注文しようとする金額：　空売り：' + f'{short_transaction_amount:,.1f}' \
+            + ', 買い：' + f'{long_transaction_amount:,.1f}'
 
         if check_result == amchkr.AmountChecker.CHECK_RESULT_MARGIN_TRADING_LIMIT_OVER:
-            message = '信用取引の限度を超えますので、注文不可です。' + os.linesep + message_assets_info
+            message = '信用取引の限度(' + f'{self.current_trading_info.assets * 3.3:,.1f}' \
+                + ')を超えますので、注文不可です。' + os.linesep + message_assets_info
         
         elif self.action_mode == self.ACTION_MODE_FORBIDDEN:
             if check_result == amchkr.AmountChecker.CHECK_RESULT_BOTH_AMOUNT_OVER:

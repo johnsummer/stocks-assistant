@@ -2,6 +2,7 @@ import argparse
 import datetime as dt
 import Trading as tr
 import re
+import traceback
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='トレード練習ツール(CLIプロトタイプ版)')
@@ -86,17 +87,19 @@ if __name__ == "__main__":
                 continue
 
         # 総資産超過時の処理モードを設定するコマンド
-        if input_str.startswith("allow_over_asset="):
+        if input_str.startswith("allow_over_assets="):
             command_list = input_str.split('=')
             if len(command_list) == 2:
                 value = command_list[1]
 
                 if value == 'true':
                     trading.action_mode = trading.ACTION_MODE_WARNING
-                else:
+                elif value == 'false':
                     trading.action_mode = trading.ACTION_MODE_FORBIDDEN
+                else:
+                    print('コマンド不正。値に true または false を指定してください。')
 
-                print('allow_over_asset=' + value)
+                print('allow_over_assets=' + value)
             else:
                 print('コマンド不正')
                 
@@ -140,8 +143,9 @@ if __name__ == "__main__":
 
             trading.one_transaction(trading_date, short_lot, long_lot, lot_volumn)
 
-        except:
+        except Exception as e:
             print('入力不正')
+            print(traceback.format_exc())
         
         # 取引記録のファイル出力に関する動作確認
         # i = i + 1
