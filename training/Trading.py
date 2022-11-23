@@ -53,13 +53,16 @@ class Trading:
 
     amount_checker:amchkr.AmountChecker
 
-    def __init__(self, stock_info:si.StockInfo, assets:float=0.0) -> None:
+    TRANSACTION_TIME_CLOSE = 0
+    TRANSACTION_TIME_NEXT_OPEN = 1
+
+    def __init__(self, stock_info:si.StockInfo, assets:float=0.0, identifier:str='') -> None:
         """
         トレードを開始する
         Args:
-            code (str): トレード対象銘柄のコード
-            start_date (date): トレードの開始日付
-            end_date (date): トレードの終了日付
+            stock_info (StockInfo): トレード対象銘柄の情報
+            assets (float): トレード開始時の資産額
+            identifier (str): 同銘柄、同期間のトレードを行った際に、csvファイルに対して区別を付けたい時の識別子
         Returns:
             None
         """
@@ -78,7 +81,8 @@ class Trading:
         self.stock_info = stock_info
 
         # 入力履歴を保存するcsvファイルを初期化する
-        self.transactions_csv =  'output/transaction_history_' + self.stock_info.code + '_' + self.stock_info.start_date.strftime('%Y%m%d') + '_' + self.stock_info.end_date.strftime('%Y%m%d') + '.csv'
+        self.transactions_csv =  'output/transaction_history_' + self.stock_info.code + '_' + self.stock_info.start_date.strftime('%Y%m%d') \
+            + '_' + self.stock_info.end_date.strftime('%Y%m%d') + '_' + identifier + '.csv'
         if not os.path.isfile(self.transactions_csv):
             with open(self.transactions_csv, 'w', newline='') as f:
                 header = ['trading_date', 'short_lot', 'long_lot']
@@ -86,7 +90,8 @@ class Trading:
                 writer.writerow(header)
 
         # トレード履歴を保存するcsvファイルを初期化する
-        self.trading_history_csv =  'output/trading_history_' + self.stock_info.code + '_' + self.stock_info.start_date.strftime('%Y%m%d') + '_' + self.stock_info.end_date.strftime('%Y%m%d') + '.csv'
+        self.trading_history_csv =  'output/trading_history_' + self.stock_info.code + '_' + self.stock_info.start_date.strftime('%Y%m%d') \
+            + '_' + self.stock_info.end_date.strftime('%Y%m%d') + '_' + identifier + '.csv'
         if not os.path.isfile(self.trading_history_csv):
             with open(self.trading_history_csv, 'w', newline='') as f:
                 header = ['取引日付', '株価', '買い株数', '保有株数', '平均取得単価', 'ロング損益', '空売り株数', '空売り中の株数', '平均売り単価', 'ショート損益', '総資産']
@@ -104,23 +109,48 @@ class Trading:
         self.amount_checker = amchkr.AmountChecker()
         self.action_mode = self.ACTION_MODE_FORBIDDEN
 
-    def one_transaction(self, trading_date:date, short_lot:int, long_lot:int, lot_volumn:int=100):
+    def one_transaction(self, trading_date:date, short_lot:int, long_lot:int, lot_volumn:int=100, transaction_time:int=0):
         """
         1回の取引を行う
         Args:
             trading_date (date): 取引の日付
             short_lot (int): 該当日に持っている空売りのロット数
             long_lot (int): 該当日に持っている買いのロット数
+            lot_volumn (int): 1売買単位のロット数
+            transaction_time (int): 売買タイミング（大引け:0、翌日寄付:1）
         Returns:
             None
         """
         try:
-            stock_data = self.stock_info.stock_data_df[self.stock_info.stock_data_df.index == trading_date.strftime('%Y-%m-%d')]
-            if len(stock_data) == 0:
-                print("入力された日付のデータはない。その日は祝日か、取得期間外の日付かもしれない。")
-                return
+            stock_price = 0
+            stock_data = None
             
-            stock_price = float(stock_data['Close'])
+            if transaction_time == self.TRANSACTION_TIME_CLOSE:
+                # 大引けでの売買
+                stock_data = self.stock_info.stock_data_df[self.stock_info.stock_data_df.index == trading_date.strftime('%Y-%m-%d')]
+                if len(stock_data) == 0:
+                    print("入力された日付のデータはない。その日は祝日か、取得期間外の日付かもしれない。")
+                    return
+                
+                stock_price = float(stock_data['Close'])
+            else:
+                # 翌日寄付での売買
+                trading_date = trading_date + timedelta(days=1)
+                stock_data = self.stock_info.stock_data_df[self.stock_info.stock_data_df.index == trading_date.strftime('%Y-%m-%d')]
+
+                # 翌日のデータがない場合、休日の可能性があるので、更にデータを取れるまで次の日のデータを取ってみる。
+                # ただ、データの最後に来た可能性があるので、最大15日間で試す(15連休の可能性はない)
+                i = 1
+                while(len(stock_data) == 0 and i <= 15):
+                    trading_date = trading_date + timedelta(days=1)
+                    stock_data = self.stock_info.stock_data_df[self.stock_info.stock_data_df.index == trading_date.strftime('%Y-%m-%d')]
+                    i = i + 1
+
+                if len(stock_data) == 0:
+                    print("入力された日付の翌営業日のデータはない。取得期間外の日付かもしれない。")
+                    return
+                
+                stock_price = float(stock_data['Open'])
             # print(stock_price)
 
             # ショート売買の準備

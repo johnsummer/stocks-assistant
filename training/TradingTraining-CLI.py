@@ -42,7 +42,8 @@ if __name__ == "__main__":
     # i = 0
 
     # トレーディングオブジェクトの初期化
-    trading = tr.Trading(stock_info, assets)
+    trading_close = tr.Trading(stock_info, assets, 'close')
+    trading_next_open = tr.Trading(stock_info, assets, 'open')
 
     # 取引入力における日付の年の部分。Noneでなければ設定されているとする。その場合は年の入力を省くことができる。
     trading_date_year:str = None
@@ -79,15 +80,24 @@ if __name__ == "__main__":
         if input_str.startswith("history "):
             command_list = input_str.split()
             if command_list[1] == "show":
-                trading.show_trading_history_in_stack()
+                if len(command_list) == 2 or (len(command_list) == 3 and command_list[2] == "close"):
+                    trading_close.show_trading_history_in_stack()
+                elif len(command_list) == 3 and command_list[2] == "open":
+                    trading_next_open.show_trading_history_in_stack()
+                else:
+                    print('コマンド不正')
                 continue
-            if command_list[1] == "reset":
+            elif command_list[1] == "reset":
                 if len(command_list) != 3:
                     print('コマンド不正')
                     continue
                 
                 number = int(command_list[2])
-                trading.reset_trading_info(number)
+                trading_close.reset_trading_info(number)
+                trading_next_open.reset_trading_info(number)
+                continue
+            else:
+                print('コマンド不正')
                 continue
 
         # 総資産超過時の処理モードを設定するコマンド
@@ -97,9 +107,11 @@ if __name__ == "__main__":
                 value = command_list[1]
 
                 if value == 'true':
-                    trading.action_mode = trading.ACTION_MODE_WARNING
+                    trading_close.action_mode = trading_close.ACTION_MODE_WARNING
+                    trading_next_open.action_mode = trading_next_open.ACTION_MODE_WARNING
                 elif value == 'false':
-                    trading.action_mode = trading.ACTION_MODE_FORBIDDEN
+                    trading_close.action_mode = trading_close.ACTION_MODE_FORBIDDEN
+                    trading_next_open.action_mode = trading_next_open.ACTION_MODE_FORBIDDEN
                 else:
                     print('コマンド不正。値に true または false を指定してください。')
 
@@ -145,7 +157,8 @@ if __name__ == "__main__":
             # print('short_lot:' + str(short_lot))
             # print('long_lot:' + str(long_lot))
 
-            trading.one_transaction(trading_date, short_lot, long_lot, lot_volumn)
+            trading_close.one_transaction(trading_date, short_lot, long_lot, lot_volumn, trading_close.TRANSACTION_TIME_CLOSE)
+            trading_next_open.one_transaction(trading_date, short_lot, long_lot, lot_volumn, trading_next_open.TRANSACTION_TIME_NEXT_OPEN)
 
         except Exception as e:
             print('入力不正')

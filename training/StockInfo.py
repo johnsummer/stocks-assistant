@@ -17,7 +17,15 @@ class StockInfo:
     end_date:date
 
     def __init__(self, code:str, start_date:date, end_date:date):
-
+        """
+        株価を含めた銘柄情報を読み込む
+        Args:
+            code (str): 銘柄コード
+            start_date (date): 読み込む対象となる株価データの開始日
+            end_date (date): 読み込む対象となる株価データの終了日
+        Returns:
+            None
+        """
         self.code = code
         self.start_date = start_date
         self.end_date = end_date
@@ -27,4 +35,4 @@ class StockInfo:
 
         start_str = start_date.strftime('%Y-%m-%d')
         end_str = end_date.strftime('%Y-%m-%d')
-        self.stock_data_df = yf.download(code + '.T', start=start_str, end=end_str, interval = "1d")
+        self.stock_data_df = yf.download(code, start=start_str, end=end_str, interval = "1d")
