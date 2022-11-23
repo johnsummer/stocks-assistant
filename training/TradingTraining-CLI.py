@@ -5,6 +5,38 @@ import StockInfo as si
 import re
 import traceback
 
+# 1取引を行った後のトレード詳細情報を表示する
+def display_transaction_detail(trading:tr.Trading, message:str):
+
+    # 平均単価が0の場合は0で出力する
+    avg_short_price = 0
+    if trading.current_trading_info.short_trading.number_now != 0:
+        avg_short_price = trading.current_trading_info.short_trading.total_amount_now / trading.current_trading_info.short_trading.number_now
+    avg_long_price = 0
+    if trading.current_trading_info.long_trading.number_now != 0:
+        avg_long_price = trading.current_trading_info.long_trading.total_amount_now / trading.current_trading_info.long_trading.number_now
+
+    if len(message) > 0:
+        print(message)
+
+    print('取引日付：' + trading.current_trading_info.trading_date.strftime('%Y-%m-%d')
+        + '\t\t株価(終値)：' + f'{trading.current_trading_info.stock_price:,.1f}')
+    print('---------------------')
+    # print('売り注文株数：' + str(trading.current_trading_info.short_transaction_number)
+    #     + '\t\t売り総株数：' + str(trading.current_trading_info.short_trading.number_now))
+    print('平均売り単価：' + f'{avg_short_price:,.1f}'
+        + '\t\t売り総額：' + f'{trading.current_trading_info.short_trading.total_amount_now:,.1f}'
+        + '\t\t損益(ショート)：' + f'{trading.current_trading_info.short_profit:,.1f}')
+    # print('---------------------')
+    # print('買い注文株数：' + str(trading.current_trading_info.long_transaction_number)
+    #     + '\t\t保有株数：' + str(trading.current_trading_info.long_trading.number_now))
+    print('平均取得単価：' + f'{avg_long_price:,.1f}'
+        + '\t\t保有総額：' + f'{trading.current_trading_info.long_trading.total_amount_now:,.1f}'
+        + '\t\t損益(ロング)：' + f'{trading.current_trading_info.long_profit:,.1f}')
+    print('---------------------')
+    print('総資産：' + f'{trading.current_trading_info.assets:,.1f}')
+    print('---------------------')
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='トレード練習ツール(CLIプロトタイプ版)')
 
@@ -157,8 +189,25 @@ if __name__ == "__main__":
             # print('short_lot:' + str(short_lot))
             # print('long_lot:' + str(long_lot))
 
-            trading_close.one_transaction(trading_date, short_lot, long_lot, lot_volumn, trading_close.TRANSACTION_TIME_CLOSE)
-            trading_next_open.one_transaction(trading_date, short_lot, long_lot, lot_volumn, trading_next_open.TRANSACTION_TIME_NEXT_OPEN)
+            print('■ 大引け注文：')
+            trading_close_message = trading_close.one_transaction(trading_date, short_lot, long_lot, lot_volumn, 
+                trading_close.TRANSACTION_TIME_CLOSE)
+
+            if trading_close_message[0] == 'failure':
+                print(trading_close_message[1])
+            else:
+                display_transaction_detail(trading_close, trading_close_message[1])
+                
+                print('■ 翌日注文：')
+                trading_next_open_messege = trading_next_open.one_transaction(trading_date, short_lot, long_lot, lot_volumn, 
+                    trading_next_open.TRANSACTION_TIME_NEXT_OPEN)
+
+                if trading_next_open_messege[0] == 'failure':
+                    print(trading_close_message[1])
+                    trading_close.reset_trading_info(1)
+                    print('Inof:翌日寄付注文に失敗のため、1取引分の大引け注文を巻き戻す')
+                else:
+                    display_transaction_detail(trading_next_open, trading_next_open_messege[1])
 
         except Exception as e:
             print('入力不正')
