@@ -1,6 +1,7 @@
 import argparse
 import datetime as dt
 import Trading as tr
+import StockInfo as si
 import re
 import traceback
 
@@ -30,15 +31,18 @@ if __name__ == "__main__":
     print('assets=' + str(assets))
 
     print('データ読み込み中。。。')
-    trading = tr.Trading(args.code, start_date, end_date, assets)
+    stock_info = si.StockInfo(args.code, start_date, end_date)
     print('データ読み込み完了。')
 
     # 取得できた株価データの範囲を確認するためにCLIでDataFrameを表示する
-    stock_data = trading.stock_data_df
+    stock_data = stock_info.stock_data_df
     print(stock_data)
 
     # 取引記録のファイル出力に関する動作確認用の変数
     # i = 0
+
+    # トレーディングオブジェクトの初期化
+    trading = tr.Trading(stock_info, assets)
 
     # 取引入力における日付の年の部分。Noneでなければ設定されているとする。その場合は年の入力を省くことができる。
     trading_date_year:str = None

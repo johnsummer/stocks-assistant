@@ -1,5 +1,5 @@
 import csv
-from datetime import datetime, timedelta
+from datetime import timedelta
 from datetime import date
 import os
 import collections
@@ -8,24 +8,24 @@ import traceback
 import pandas as pd
 import yfinance as yf
 
-import LongTrading as lt
-import ShortTrading as st
 import CurrentTradingInfo as cti
 import AmountChecker as amchkr
+import StockInfo as si
 
 class Trading:
 
     # transactions_list = []
     # trading_history_list = []
 
-    # 株価格のデータ
-    stock_data_df:pd.DataFrame = None
+    # # 株価格のデータ
+    # stock_data_df:pd.DataFrame = None
 
-    # 株銘柄の情報
-    stock_info = None
-    code:str
-    start_date:date
-    end_date:date
+    # # 株銘柄の情報
+    # stock_info = None
+    # code:str
+    # start_date:date
+    # end_date:date
+    stock_info:si.StockInfo
 
     transactions_csv = None
     trading_history_csv = None
@@ -53,7 +53,7 @@ class Trading:
 
     amount_checker:amchkr.AmountChecker
 
-    def __init__(self, code:str, start_date:date, end_date:date, assets:float=0.0) -> None:
+    def __init__(self, stock_info:si.StockInfo, assets:float=0.0) -> None:
         """
         トレードを開始する
         Args:
@@ -64,19 +64,21 @@ class Trading:
             None
         """
 
-        self.code = code
-        self.start_date = start_date
-        self.end_date = end_date
+        # self.code = code
+        # self.start_date = start_date
+        # self.end_date = end_date
 
-        # yfinanceの仕様的に指定した終了日付の前日までデータを取得してくるので、1日を追加する
-        end_date = end_date + timedelta(days=1)
+        # # yfinanceの仕様的に指定した終了日付の前日までデータを取得してくるので、1日を追加する
+        # end_date = end_date + timedelta(days=1)
 
-        start_str = start_date.strftime('%Y-%m-%d')
-        end_str = end_date.strftime('%Y-%m-%d')
-        self.stock_data_df = yf.download(code + '.T', start=start_str, end=end_str, interval = "1d")
+        # start_str = start_date.strftime('%Y-%m-%d')
+        # end_str = end_date.strftime('%Y-%m-%d')
+        # self.stock_data_df = yf.download(code + '.T', start=start_str, end=end_str, interval = "1d")
+
+        self.stock_info = stock_info
 
         # 入力履歴を保存するcsvファイルを初期化する
-        self.transactions_csv =  'output/transaction_history_' + self.code + '_' + self.start_date.strftime('%Y%m%d') + '_' + self.end_date.strftime('%Y%m%d') + '.csv'
+        self.transactions_csv =  'output/transaction_history_' + self.stock_info.code + '_' + self.stock_info.start_date.strftime('%Y%m%d') + '_' + self.stock_info.end_date.strftime('%Y%m%d') + '.csv'
         if not os.path.isfile(self.transactions_csv):
             with open(self.transactions_csv, 'w', newline='') as f:
                 header = ['trading_date', 'short_lot', 'long_lot']
@@ -84,7 +86,7 @@ class Trading:
                 writer.writerow(header)
 
         # トレード履歴を保存するcsvファイルを初期化する
-        self.trading_history_csv =  'output/trading_history_' + self.code + '_' + self.start_date.strftime('%Y%m%d') + '_' + self.end_date.strftime('%Y%m%d') + '.csv'
+        self.trading_history_csv =  'output/trading_history_' + self.stock_info.code + '_' + self.stock_info.start_date.strftime('%Y%m%d') + '_' + self.stock_info.end_date.strftime('%Y%m%d') + '.csv'
         if not os.path.isfile(self.trading_history_csv):
             with open(self.trading_history_csv, 'w', newline='') as f:
                 header = ['取引日付', '株価', '買い株数', '保有株数', '平均取得単価', 'ロング損益', '空売り株数', '空売り中の株数', '平均売り単価', 'ショート損益', '総資産']
@@ -113,7 +115,7 @@ class Trading:
             None
         """
         try:
-            stock_data = self.stock_data_df[self.stock_data_df.index == trading_date.strftime('%Y-%m-%d')]
+            stock_data = self.stock_info.stock_data_df[self.stock_info.stock_data_df.index == trading_date.strftime('%Y-%m-%d')]
             if len(stock_data) == 0:
                 print("入力された日付のデータはない。その日は祝日か、取得期間外の日付かもしれない。")
                 return
