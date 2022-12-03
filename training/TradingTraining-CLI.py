@@ -1,9 +1,13 @@
 import argparse
 import datetime as dt
-import Trading as tr
-import StockInfo as si
+import sys
 import re
 import traceback
+
+import Trading as tr
+import StockInfo as si
+import CSVLoader as cl
+import ReopenTradingInfo as rti
 
 # 1取引を行った後のトレード詳細情報を表示する
 def display_transaction_detail(trading:tr.Trading, message:str):
@@ -40,17 +44,17 @@ def display_transaction_detail(trading:tr.Trading, message:str):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='トレード練習ツール(CLIプロトタイプ版)')
 
-    parser.add_argument('code', help='銘柄コード(XXXX)')
+    parser.add_argument('code', help='銘柄コード(日本銘柄の場合：XXXX.T)')
     parser.add_argument('-s', help='トレード開始日付(yyyymmdd)。デフォルトは2013/01/01')
     parser.add_argument('-e', help='トレード終了日付(yyyymmdd)。デフォルトは実行日付')
     parser.add_argument('-l', help='1ロットの株数。デフォルトは100株')
     parser.add_argument('-a', help='トレード用の想定金額(初期資産)。デフォルトは1000万(円)。「,」で大引けと寄付注文の資産値をそれぞれ指定できる（トレード再開時に使われる想定）')
+    parser.add_argument('-ro', '--reopen', help='トレード再開モードで起動する', action='store_true')
 
     args = parser.parse_args()
 
     # 各引数のデフォルト値を定義する
     start_date_str = '20130101' if args.s == None else args.s
-    start_date = dt.datetime.strptime(start_date_str, '%Y%m%d').date()
     end_date = dt.datetime.now().date() if args.e == None else dt.datetime.strptime(args.e, '%Y%m%d').date()
     lot_volumn = 100 if args.l == None else int(args.l)
 
@@ -64,6 +68,48 @@ if __name__ == "__main__":
             assets_open = float(assets_input[1])
         else:
             assets_open = assets_close
+
+    # トレード練習の開始日時（文字列）
+    training_start_datetime_str = None
+
+    if args.reopen:
+        # トレード再開の場合、各引数の値を上書きする
+        csv_loader = cl.CSVLoader(args.code)
+        reopen_choices = list(csv_loader.reopen_trading_items.values())
+
+        if len(reopen_choices) == 0:
+            print('再開可能なトレードがありません。銘柄コードを確認のうえ本ツールを再度起動してください。')
+            sys.exit()
+
+        print('再開可能なトレード候補：')
+        print('番号\t銘柄コード\tトレード開始日\tトレード終了日(中断日)\tトレード練習開始日時')
+
+        i = 0
+        for choice in reopen_choices:
+            print(str(i) + '\t' + choice.code + '\t\t' + choice.start_date + '\t' + choice.last_trading_date + '\t\t' + choice.training_start_datetime)
+            i = i + 1
+
+        input_str_choice = input('上記の番号から再開したいトレードを選択してください：')
+        if input_str_choice == "exit":
+            sys.exit()
+
+        while int(input_str_choice) >= i or int(input_str_choice) < 0:
+            print('範囲外の番号を選択されています。もう一度入力しなおしてください。')
+            input_str_choice = input('上記の番号から再開したいトレードを選択してください：')
+            if input_str_choice == "exit":
+                sys.exit()
+
+        reopen_trading_info:rti.ReopenTradingInfo = reopen_choices[int(input_str_choice)]
+
+        start_date_str = reopen_trading_info.start_date
+        training_start_datetime_str = reopen_trading_info.training_start_datetime
+        assets_close = reopen_trading_info.assets_dict['close']
+        assets_open = reopen_trading_info.assets_dict['open']
+
+    # 文字列の引数を処理に必要な型に変換
+    start_date = dt.datetime.strptime(start_date_str, '%Y%m%d').date()
+    if training_start_datetime_str == None:
+        training_start_datetime_str = dt.datetime.now().strftime('%Y%m%d%H%M%S')
 
     # 起動時入力された引数に関する動作確認
     print('code=' + args.code)
@@ -84,8 +130,8 @@ if __name__ == "__main__":
     # i = 0
 
     # トレーディングオブジェクトの初期化
-    trading_close = tr.Trading(stock_info, assets_close, 'close')
-    trading_next_open = tr.Trading(stock_info, assets_open, 'open')
+    trading_close = tr.Trading(stock_info, training_start_datetime_str, assets_close, 'close')
+    trading_next_open = tr.Trading(stock_info, training_start_datetime_str, assets_open, 'open')
 
     # 取引入力における日付の年の部分。Noneでなければ設定されているとする。その場合は年の入力を省くことができる。
     trading_date_year:str = None
@@ -166,7 +212,7 @@ if __name__ == "__main__":
 
         # アプリを終了させるコマンド
         if input_str == "exit":
-            break
+            sys.exit()
 
         # 上記のif文に該当しない場合、取引操作の解析に入る
         # 入力チェック

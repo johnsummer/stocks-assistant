@@ -49,7 +49,7 @@ class Trading:
     TRANSACTION_TIME_CLOSE = 0
     TRANSACTION_TIME_NEXT_OPEN = 1
 
-    def __init__(self, stock_info:si.StockInfo, assets:float=0.0, identifier:str='') -> None:
+    def __init__(self, stock_info:si.StockInfo, training_start_datetime:str, assets:float=0.0, identifier:str='') -> None:
         """
         トレードを開始する
         Args:
@@ -59,33 +59,21 @@ class Trading:
         Returns:
             None
         """
-
-        # TO DELETE
-        # self.code = code
-        # self.start_date = start_date
-        # self.end_date = end_date
-
-        # # yfinanceの仕様的に指定した終了日付の前日までデータを取得してくるので、1日を追加する
-        # end_date = end_date + timedelta(days=1)
-
-        # start_str = start_date.strftime('%Y-%m-%d')
-        # end_str = end_date.strftime('%Y-%m-%d')
-        # self.stock_data_df = yf.download(code + '.T', start=start_str, end=end_str, interval = "1d")
-
         self.stock_info = stock_info
 
+        # 使わなさそうで、一旦以下の処理をコメントアウトする
         # 入力履歴を保存するcsvファイルを初期化する
-        self.transactions_csv =  'output/transaction_history_' + self.stock_info.code + '_' + self.stock_info.start_date.strftime('%Y%m%d') \
-            + '_' + self.stock_info.end_date.strftime('%Y%m%d') + '_' + identifier + '.csv'
-        if not os.path.isfile(self.transactions_csv):
-            with open(self.transactions_csv, 'w', newline='') as f:
-                header = ['trading_date', 'short_lot', 'long_lot']
-                writer = csv.writer(f)
-                writer.writerow(header)
+        # self.transactions_csv =  'output/transaction_history_' + self.stock_info.code + '_' + self.stock_info.start_date.strftime('%Y%m%d') \
+        #     + '_' + training_start_datetime + '_' + identifier + '.csv'
+        # if not os.path.isfile(self.transactions_csv):
+        #     with open(self.transactions_csv, 'w', newline='') as f:
+        #         header = ['trading_date', 'short_lot', 'long_lot']
+        #         writer = csv.writer(f)
+        #         writer.writerow(header)
 
         # トレード履歴を保存するcsvファイルを初期化する
         self.trading_history_csv =  'output/trading_history_' + self.stock_info.code + '_' + self.stock_info.start_date.strftime('%Y%m%d') \
-            + '_' + self.stock_info.end_date.strftime('%Y%m%d') + '_' + identifier + '.csv'
+            + '_' + training_start_datetime + '_' + identifier + '.csv'
         if not os.path.isfile(self.trading_history_csv):
             with open(self.trading_history_csv, 'w', newline='') as f:
                 header = ['取引日付', '株価', '買い株数', '保有株数', '平均取得単価', 'ロング損益', '空売り株数', '空売り中の株数', '平均売り単価', 'ショート損益', '総資産']
@@ -209,7 +197,7 @@ class Trading:
             #     print(str(current_trading_info_tmp.trading_date) + ' : ' + str(current_trading_info_tmp.assets))
 
             # 取引記録のファイルを出力
-            self.__output_transaction_input_to_csv()
+            # self.__output_transaction_input_to_csv()
             self.__output_trading_info_to_csv()
 
             # 総資産超過の警告メッセージを渡して本取引後のトレード状態を表示する。超過していない場合は警告メッセージが空文字列になる
@@ -250,9 +238,10 @@ class Trading:
         df_trading_history_csv = df_trading_history_csv[:-number]
         df_trading_history_csv.to_csv(self.trading_history_csv, index=False, encoding="shift-jis")
 
-        df_transactions_csv = pd.read_csv(self.transactions_csv, encoding="shift-jis")
-        df_transactions_csv = df_transactions_csv[:-number]
-        df_transactions_csv.to_csv(self.transactions_csv, index=False, encoding="shift-jis")
+        # 使わなさそうで一旦コメントアウトする
+        # df_transactions_csv = pd.read_csv(self.transactions_csv, encoding="shift-jis")
+        # df_transactions_csv = df_transactions_csv[:-number]
+        # df_transactions_csv.to_csv(self.transactions_csv, index=False, encoding="shift-jis")
 
     def show_trading_history_in_stack(self):
         """
@@ -271,18 +260,19 @@ class Trading:
                 + '  ¥' + f'{current_trading_info_tmp.assets:,.1f}')
             i = i + 1
 
+    # 使わなさそうで一旦コメントアウトする
     # 取引の入力情報をcsvファイルに書き出す
-    def __output_transaction_input_to_csv(self):
+    # def __output_transaction_input_to_csv(self):
 
-        transaction = [
-            self.current_trading_info.trading_date.strftime('%Y-%m-%d'), 
-            str(self.current_trading_info.short_lot), 
-            str(self.current_trading_info.long_lot)
-        ]
+    #     transaction = [
+    #         self.current_trading_info.trading_date.strftime('%Y-%m-%d'), 
+    #         str(self.current_trading_info.short_lot), 
+    #         str(self.current_trading_info.long_lot)
+    #     ]
 
-        with open(self.transactions_csv, 'a', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(transaction)
+    #     with open(self.transactions_csv, 'a', newline='') as f:
+    #         writer = csv.writer(f)
+    #         writer.writerow(transaction)
 
     # トレード履歴をcsvファイルに書き出す
     def __output_trading_info_to_csv(self):
