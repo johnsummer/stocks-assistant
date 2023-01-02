@@ -35,8 +35,8 @@ class Trading:
     # 直近のトレード履歴(最新10件)を保存するリスト。誤入力の際にトレードの状態を戻すために使う
     __trading_info_history:collections.deque
 
-    # トレード履歴の一時保存の最大件数(現在最新の状態＋10件前まで)
-    __MAX_LENGTH_OF_HISTORY = 11
+    # トレード履歴の一時保存の最大件数(現在最新の状態＋30件前まで)
+    __MAX_LENGTH_OF_HISTORY = 31
 
     # 総資産超過チェックを通らないときの処理モード
     action_mode:int
