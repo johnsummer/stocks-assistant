@@ -209,13 +209,42 @@ if __name__ == "__main__":
                 print('コマンド不正')
                 
             continue
+        
+        # メモ記録のコメント
+        if input_str.startswith("memo "):
+            command_list = input_str.split()
+            if len(command_list) != 3:
+                print('取引情報が入力不正')
+                continue
 
+            memo_date_str = command_list[1] if len(command_list[1]) == 8 or trading_date_year == None else trading_date_year + command_list[1]
+            
+            # 日付の入力チェック（桁数だけ）
+            if not re.compile('[0-9]{8}').search(memo_date_str):
+                print('日付のフォーマットが不正')
+                continue
+
+            memo_date = dt.datetime.strptime(memo_date_str, '%Y%m%d').date()
+
+            result_of_taking_memo = None
+            # 大引けの日付を基準でメモを書き込む。寄付のファイルに対しては指定した日付の次の営業日に書き込む
+            row_number = trading_close.take_memo_by_date(memo_date, command_list[2])
+            if row_number != -1:
+                result_of_taking_memo = trading_next_open.take_memo_by_row_number(row_number, command_list[2])
+            else:
+                print("大引け取引のcsvファイルへのメモ記録に失敗しました。指定した日付はトレード履歴がない可能性があります。")
+                continue
+
+            if result_of_taking_memo is None:
+                print("寄付取引のcsvファイルへのメモ記録に失敗しました。")
+
+            continue
 
         # アプリを終了させるコマンド
         if input_str == "exit":
             sys.exit()
 
-        # 上記のif文に該当しない場合、取引操作の解析に入る
+        # 上記のif文に該当しない場合、取引操作として処理する
         # 入力チェック
         trading_operation = input_str.split()
         if len(trading_operation) != 2:
