@@ -26,7 +26,7 @@ class Trading:
     # end_date:date
     stock_info:si.StockInfo
 
-    transactions_csv = None
+    # transactions_csv = None
     trading_history_csv = None
 
     # 最新取引の情報
