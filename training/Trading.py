@@ -76,7 +76,7 @@ class Trading:
             + '_' + training_start_datetime + '_' + identifier + '.csv'
         if not os.path.isfile(self.trading_history_csv):
             with open(self.trading_history_csv, 'w', newline='') as f:
-                header = ['取引日付', '株価', '買い株数', '保有株数', '平均取得単価', 'ロング損益', '空売り株数', '空売り中の株数', '平均売り単価', 'ショート損益', '総資産']
+                header = ['取引日付', '株価', '買い株数', '保有株数', '平均取得単価', 'ロング損益', '空売り株数', '空売り中の株数', '平均売り単価', 'ショート損益', '総資産', 'メモ']
                 writer = csv.writer(f)
                 writer.writerow(header)
 
@@ -99,7 +99,7 @@ class Trading:
             lot_volumn (int): 1注文単位のロット数
             transaction_time (int): 注文タイミング（大引け:0、翌日寄付:1）
         Returns:
-            None
+            Tuple[str, str]: 'success'/'failure', 付属のメッセージ
         """
 
         RETURN_FAIL = 'failure'
@@ -259,6 +259,59 @@ class Trading:
                 + '  ' + str(current_trading_info_tmp.short_lot) + '-' + str(current_trading_info_tmp.long_lot) 
                 + '  ¥' + f'{current_trading_info_tmp.assets:,.1f}')
             i = i + 1
+
+    def take_memo_by_date(self, memo_date:date, memo:str) -> int:
+        """
+        指定した日付のトレードに対していメモを記録する。
+        Args:
+            memo_date (date): 対象日付
+            memo (str): メモ内容
+        Returns:
+            int: 書き込む対象となった行番号。-1->書き込みに失敗
+        """
+        df_trading_history_csv = pd.read_csv(self.trading_history_csv, encoding="shift-jis")
+        
+        # 該当行の番号を取得する
+        row = df_trading_history_csv.query('取引日付 == "' + memo_date.strftime('%Y-%m-%d') + '"')
+
+        if len(row) > 0:
+            row_number = row.head(1).index.item()
+
+            # メモを書き込む
+            df_trading_history_csv.at[row_number, 'メモ'] = memo
+
+            # csvに書き込む
+            df_trading_history_csv.to_csv(self.trading_history_csv, index=False, encoding="shift-jis")
+
+            return row_number
+        else:
+            return -1
+
+    def take_memo_by_row_number(self, row_number:int, memo:str) -> str:
+        """
+        指定した日付のトレードに対していメモを記録する。
+        Args:
+            row_number (int): メモ記録対象の行番号。csv上の1行目の行番号は0になる。
+            memo (str): メモ内容
+        Returns:
+            str: 書き込む対象となった行の取引日付(csvデータではインデックスとなる)。None->書き込みに失敗
+        """
+        df_trading_history_csv = pd.read_csv(self.trading_history_csv, encoding="shift-jis")
+
+        df_row_count = len(df_trading_history_csv)
+
+        if df_row_count > 0 and df_row_count > row_number:
+            date_str = df_trading_history_csv.at[row_number, '取引日付']
+
+            # メモを書き込む
+            df_trading_history_csv.at[row_number, 'メモ'] = memo
+
+            # csvに書き込む
+            df_trading_history_csv.to_csv(self.trading_history_csv, index=False, encoding="shift-jis")
+
+            return date_str
+        else:
+            return None
 
     # 使わなさそうで一旦コメントアウトする
     # 取引の入力情報をcsvファイルに書き出す
