@@ -82,11 +82,12 @@ if __name__ == "__main__":
             sys.exit()
 
         print('再開可能なトレード候補：')
-        print('番号\t銘柄コード\tトレード開始日\tトレード終了日(中断日)\tトレード練習開始日時')
+        print('番号\t銘柄コード\tトレード開始日\tトレード終了日(中断日)\t練習開始日時(識別文字列)\t終了時の総資産(大引け, 寄付)')
 
         i = 0
         for choice in reopen_choices:
-            print(str(i) + '\t' + choice.code + '\t\t' + choice.start_date + '\t' + choice.last_trading_date + '\t\t' + choice.training_start_datetime)
+            print(str(i) + '\t' + choice.code + '\t\t' + choice.start_date + '\t' + choice.last_trading_date + '\t\t' 
+                + choice.training_start_datetime + '\t\t\t￥' + f'{choice.assets_dict["close"]:,.1f}' + ', ￥' + f'{choice.assets_dict["open"]:,.1f}')
             i = i + 1
 
         input_str_choice = input('上記の番号から再開したいトレードを選択してください：')
@@ -111,13 +112,6 @@ if __name__ == "__main__":
     if training_start_datetime_str == None:
         training_start_datetime_str = dt.datetime.now().strftime('%Y%m%d%H%M%S')
 
-    # 起動時入力された引数に関する動作確認
-    print('code=' + args.code)
-    print('start_date=' + str(start_date))
-    print('end_date=' + str(end_date))
-    print('lot=' + str(lot_volumn))
-    print('assets=' + str(assets_close) + ',' + str(assets_open))
-
     print('データ読み込み中。。。')
     stock_info = si.StockInfo(args.code, start_date, end_date)
     print('データ読み込み完了。')
@@ -125,6 +119,13 @@ if __name__ == "__main__":
     # 取得できた株価データの範囲を確認するためにCLIでDataFrameを表示する
     stock_data = stock_info.stock_data_df
     print(stock_data)
+
+    # トレードパラメータの表示、兼入力引数に関する動作確認
+    print('code=' + args.code)
+    print('start_date=' + str(start_date))
+    print('end_date=' + str(end_date))
+    print('lot=' + str(lot_volumn))
+    print('assets=￥' + f'{assets_close:,.1f}' + ', ￥' + f'{assets_open:,.1f}')
 
     # 取引記録のファイル出力に関する動作確認用の変数
     # i = 0
