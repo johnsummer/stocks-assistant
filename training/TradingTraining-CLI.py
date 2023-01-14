@@ -4,6 +4,9 @@ import sys
 import re
 import traceback
 
+from colorama import init
+from termcolor import colored
+
 import Trading as tr
 import StockInfo as si
 import CSVLoader as cl
@@ -20,29 +23,65 @@ def display_transaction_detail(trading:tr.Trading, message:str):
     if trading.current_trading_info.long_trading.number_now != 0:
         avg_long_price = trading.current_trading_info.long_trading.total_amount_now / trading.current_trading_info.long_trading.number_now
 
+    # Windowsターミナル対応のため
+    init()
+
     if len(message) > 0:
         print(message)
 
+    # 損益の色を定義する
+    COLOR_COMMON = 'on_black'
+    COLOR_PROFIT = 'on_light_red'
+    COLOR_LOSS = 'on_light_green'
+
+    # ショートの損益色
+    short_profit_color = COLOR_COMMON
+    if trading.current_trading_info.short_profit > 0:
+        short_profit_color = COLOR_PROFIT
+    elif trading.current_trading_info.short_profit < 0:
+        short_profit_color = COLOR_LOSS
+    
+    # ロングの損益色
+    long_profit_color = COLOR_COMMON
+    if trading.current_trading_info.long_profit > 0:
+        long_profit_color = COLOR_PROFIT
+    elif trading.current_trading_info.long_profit < 0:
+        long_profit_color = COLOR_LOSS
+
+    # 平均売り単価の色
+    short_price_color = COLOR_COMMON
+    if avg_short_price > trading.current_trading_info.stock_price:
+        short_price_color = COLOR_PROFIT
+    elif avg_short_price > 0 and avg_short_price < trading.current_trading_info.stock_price:
+        short_price_color = COLOR_LOSS
+
+    # 平均取得単価の色
+    long_price_color = COLOR_COMMON
+    if avg_long_price > 0 and avg_long_price < trading.current_trading_info.stock_price:
+        long_price_color = COLOR_PROFIT
+    elif avg_long_price > trading.current_trading_info.stock_price:
+        long_price_color = COLOR_LOSS
+
     print('取引日付：' + trading.current_trading_info.trading_date.strftime('%Y-%m-%d')
-        + '\t\t株価(終値)：' + f'{trading.current_trading_info.stock_price:,.1f}')
+        + '\t\t株価：' + f'{trading.current_trading_info.stock_price:,.1f}')
     print('---------------------')
     # print('売り注文株数：' + str(trading.current_trading_info.short_transaction_number)
     #     + '\t\t売り総株数：' + str(trading.current_trading_info.short_trading.number_now))
-    print('平均売り単価：' + f'{avg_short_price:,.1f}'
+    print(colored('平均売り単価：' + f'{avg_short_price:,.1f}', on_color=short_price_color)
         + '\t\t売り総額：' + f'{trading.current_trading_info.short_trading.total_amount_now:,.1f}'
-        + '\t\t損益(ショート)：' + f'{trading.current_trading_info.short_profit:,.1f}')
+        + '\t\t損益(ショート)：' + colored(f'{trading.current_trading_info.short_profit:,.1f}', on_color=short_profit_color))
     # print('---------------------')
     # print('買い注文株数：' + str(trading.current_trading_info.long_transaction_number)
     #     + '\t\t保有株数：' + str(trading.current_trading_info.long_trading.number_now))
-    print('平均取得単価：' + f'{avg_long_price:,.1f}'
+    print(colored('平均取得単価：' + f'{avg_long_price:,.1f}', on_color=long_price_color)
         + '\t\t保有総額：' + f'{trading.current_trading_info.long_trading.total_amount_now:,.1f}'
-        + '\t\t損益(ロング)：' + f'{trading.current_trading_info.long_profit:,.1f}')
+        + '\t\t損益(ロング)：' + colored(f'{trading.current_trading_info.long_profit:,.1f}', on_color=long_profit_color))
     print('---------------------')
-    print('総資産：' + f'{trading.current_trading_info.assets:,.1f}')
+    print(colored('総資産：' + f'{trading.current_trading_info.assets:,.1f}', 'red', attrs=["bold"]))
     print('---------------------')
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='トレード練習ツール(CLIプロトタイプ版)')
+    parser = argparse.ArgumentParser(description='トレード練習ツール(CLI版)')
 
     parser.add_argument('code', help='銘柄コード(日本銘柄の場合：XXXX.T)')
     parser.add_argument('-s', help='トレード開始日付(yyyymmdd)。デフォルトは2013/01/01')
@@ -82,12 +121,12 @@ if __name__ == "__main__":
             sys.exit()
 
         print('再開可能なトレード候補：')
-        print('番号\t銘柄コード\tトレード開始日\tトレード終了日(中断日)\t練習開始日時(識別文字列)\t終了時の総資産(大引け, 寄付)')
+        print('番号\t銘柄コード\tトレード開始日\tトレード中断日\t練習開始日時\t中断時の総資産(大引け - 寄付)')
 
         i = 0
         for choice in reopen_choices:
-            print(str(i) + '\t' + choice.code + '\t\t' + choice.start_date + '\t' + choice.last_trading_date + '\t\t' 
-                + choice.training_start_datetime + '\t\t\t￥' + f'{choice.assets_dict["close"]:,.1f}' + ', ￥' + f'{choice.assets_dict["open"]:,.1f}')
+            print(str(i) + '\t' + choice.code + '\t\t' + choice.start_date + '\t' + choice.last_trading_date + '\t' 
+                + choice.training_start_datetime + '\t￥' + f'{choice.assets_dict["close"]:,.1f}' + ' - ￥' + f'{choice.assets_dict["open"]:,.1f}')
             i = i + 1
 
         input_str_choice = input('上記の番号から再開したいトレードを選択してください：')
@@ -125,7 +164,8 @@ if __name__ == "__main__":
     print('start_date=' + str(start_date))
     print('end_date=' + str(end_date))
     print('lot=' + str(lot_volumn))
-    print('assets=￥' + f'{assets_close:,.1f}' + ', ￥' + f'{assets_open:,.1f}')
+    print('assets=￥' + f'{assets_close:,.1f}' + ' - ￥' + f'{assets_open:,.1f}')
+    print()
 
     # 取引記録のファイル出力に関する動作確認用の変数
     # i = 0
@@ -139,7 +179,8 @@ if __name__ == "__main__":
 
     # トレード開始。取引するたびに一回入力する
     while True:
-        input_str = input("★入力フォーマット「yyyymmdd 空売りロット数-買いロット数」：")
+        input_str = input("★ コマンド：")
+        print()
 
         # 取引以外の操作
         # 取引入力時の年を固定で設定するコマンド
@@ -159,7 +200,7 @@ if __name__ == "__main__":
                     print('年のフォーマットが不正')
                     trading_date_year = None
 
-                print("year=" + trading_date_year)
+                print(trading_date_year + '年のトレードを開始します。')
             else:
                 print('年設定が入力不正')
 
@@ -175,6 +216,8 @@ if __name__ == "__main__":
                     trading_next_open.show_trading_history_in_stack()
                 else:
                     print('コマンド不正')
+                
+                print()
                 continue
             elif command_list[1] == "reset":
                 if len(command_list) != 3:
@@ -298,7 +341,8 @@ if __name__ == "__main__":
         except Exception as e:
             print('入力不正')
             print(traceback.format_exc())
-        
+
+        print()   
         # 取引記録のファイル出力に関する動作確認
         # i = i + 1
         # if (i % 2 == 0):
