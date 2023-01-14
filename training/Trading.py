@@ -185,20 +185,23 @@ class Trading:
             # 利益を総資産に加算
             self.current_trading_info.assets = self.current_trading_info.assets + short_profit + long_profit
 
-            # トレードの状態を履歴として保存する(現在最新の取引を含め、最大11件)
-            if len(self.__trading_info_history) == self.__MAX_LENGTH_OF_HISTORY:
-                self.__trading_info_history.popleft()
+            if short_transaction_number != 0 or long_transaction_number != 0:
+                # この配下の処理は取引が発生している場合のみ行う
 
-            current_trading_info_tmp = copy.deepcopy(self.current_trading_info)
-            self.__trading_info_history.append(current_trading_info_tmp)
+                # トレードの状態を履歴として保存する(現在最新の取引を含め、最大11件)
+                if len(self.__trading_info_history) == self.__MAX_LENGTH_OF_HISTORY:
+                    self.__trading_info_history.popleft()
 
-            # # トレードの状態を履歴として保存する処理の動作確認
-            # for current_trading_info_tmp in self.__trading_info_history:
-            #     print(str(current_trading_info_tmp.trading_date) + ' : ' + str(current_trading_info_tmp.assets))
+                current_trading_info_tmp = copy.deepcopy(self.current_trading_info)
+                self.__trading_info_history.append(current_trading_info_tmp)
 
-            # 取引記録のファイルを出力
-            # self.__output_transaction_input_to_csv()
-            self.__output_trading_info_to_csv()
+                # # トレードの状態を履歴として保存する処理の動作確認
+                # for current_trading_info_tmp in self.__trading_info_history:
+                #     print(str(current_trading_info_tmp.trading_date) + ' : ' + str(current_trading_info_tmp.assets))
+
+                # 取引記録のファイルを出力
+                # self.__output_transaction_input_to_csv()
+                self.__output_trading_info_to_csv()
 
             # 総資産超過の警告メッセージを渡して本取引後のトレード状態を表示する。超過していない場合は警告メッセージが空文字列になる
             # TO DELETE
