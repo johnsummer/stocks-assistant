@@ -183,6 +183,7 @@ if __name__ == "__main__":
         print()
 
         # 取引以外の操作
+        # トレード時のパラメータを設定する操作
         # 取引入力時の年を固定で設定するコマンド
         if input_str.startswith("y="):
             year_setting_input = input_str.split('=')
@@ -206,8 +207,30 @@ if __name__ == "__main__":
 
             continue
 
+        # 総資産超過時の処理モードを設定するコマンド
+        elif input_str.startswith("allow_over_assets="):
+            command_list = input_str.split('=')
+            if len(command_list) == 2:
+                value = command_list[1]
+
+                if value == 'true':
+                    trading_close.action_mode = trading_close.ACTION_MODE_WARNING
+                    trading_next_open.action_mode = trading_next_open.ACTION_MODE_WARNING
+                elif value == 'false':
+                    trading_close.action_mode = trading_close.ACTION_MODE_FORBIDDEN
+                    trading_next_open.action_mode = trading_next_open.ACTION_MODE_FORBIDDEN
+                else:
+                    print('コマンド不正。値に true または false を指定してください。')
+
+                print('allow_over_assets=' + value)
+            else:
+                print('コマンド不正')
+                
+            continue
+
+        # 指令系の操作
         # トレード履歴関連のコマンド
-        if input_str.startswith("history "):
+        elif input_str.startswith("history "):
             command_list = input_str.split()
             if command_list[1] == "show":
                 if len(command_list) == 2 or (len(command_list) == 3 and command_list[2] == "close"):
@@ -231,27 +254,6 @@ if __name__ == "__main__":
             else:
                 print('コマンド不正')
                 continue
-
-        # 総資産超過時の処理モードを設定するコマンド
-        if input_str.startswith("allow_over_assets="):
-            command_list = input_str.split('=')
-            if len(command_list) == 2:
-                value = command_list[1]
-
-                if value == 'true':
-                    trading_close.action_mode = trading_close.ACTION_MODE_WARNING
-                    trading_next_open.action_mode = trading_next_open.ACTION_MODE_WARNING
-                elif value == 'false':
-                    trading_close.action_mode = trading_close.ACTION_MODE_FORBIDDEN
-                    trading_next_open.action_mode = trading_next_open.ACTION_MODE_FORBIDDEN
-                else:
-                    print('コマンド不正。値に true または false を指定してください。')
-
-                print('allow_over_assets=' + value)
-            else:
-                print('コマンド不正')
-                
-            continue
         
         # メモ記録のコメント
         if input_str.startswith("memo "):
