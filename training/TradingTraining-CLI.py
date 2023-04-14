@@ -183,31 +183,78 @@ if __name__ == "__main__":
         print()
 
         # 取引以外の操作
+        # トレード時のパラメータを設定する操作
         # 取引入力時の年を固定で設定するコマンド
         if input_str.startswith("y="):
             year_setting_input = input_str.split('=')
             if len(year_setting_input) == 2:
-                trading_date_year = year_setting_input[1]
                 
                 # 年の設定をリセットする
-                if trading_date_year == '':
+                if year_setting_input[1] == '':
                     trading_date_year = None
                     print("yearをリセットしました")
                     continue
 
                 # 入力チェック
-                if not re.compile('[0-9]{4}').search(trading_date_year):
+                if not re.compile('[0-9]{4}').search(year_setting_input[1]):
                     print('年のフォーマットが不正')
-                    trading_date_year = None
+                    continue
 
+                trading_date_year = year_setting_input[1]
                 print(trading_date_year + '年のトレードを開始します。')
             else:
                 print('年設定が入力不正')
 
             continue
 
+        # ロットサイズを変更するコマンド
+        elif input_str.startswith("l="):
+            
+            # ポジションが0-0でないとロットサイズ変更させない
+            if trading_close.current_trading_info.long_lot != 0 or \
+                trading_close.current_trading_info.short_lot != 0 or \
+                trading_next_open.current_trading_info.long_lot != 0 or \
+                trading_next_open.current_trading_info.short_lot != 0:
+                print('ポジションを0-0にしてロットサイズを変更してください')
+                continue
+
+            lot_setting_input = input_str.split('=')
+            if len(lot_setting_input) == 2:
+                try:
+                    lot_volumn = int(lot_setting_input[1])
+                    print('ロットサイズ：' + str(lot_volumn))
+                except Exception as e:
+                    print('ロットサイズの指定値が不正。整数で入力してください。')
+                    print(traceback.format_exc())
+            else:
+                print('コマンド不正')
+
+            continue
+
+        # 総資産超過時の処理モードを設定するコマンド
+        elif input_str.startswith("allow_over_assets="):
+            command_list = input_str.split('=')
+            if len(command_list) == 2:
+                value = command_list[1]
+
+                if value == 'true':
+                    trading_close.action_mode = trading_close.ACTION_MODE_WARNING
+                    trading_next_open.action_mode = trading_next_open.ACTION_MODE_WARNING
+                elif value == 'false':
+                    trading_close.action_mode = trading_close.ACTION_MODE_FORBIDDEN
+                    trading_next_open.action_mode = trading_next_open.ACTION_MODE_FORBIDDEN
+                else:
+                    print('コマンド不正。値に true または false を指定してください。')
+
+                print('allow_over_assets=' + value)
+            else:
+                print('コマンド不正')
+                
+            continue
+
+        # 指令系の操作
         # トレード履歴関連のコマンド
-        if input_str.startswith("history "):
+        elif input_str.startswith("history "):
             command_list = input_str.split()
             if command_list[1] == "show":
                 if len(command_list) == 2 or (len(command_list) == 3 and command_list[2] == "close"):
@@ -227,34 +274,17 @@ if __name__ == "__main__":
                 number = int(command_list[2])
                 trading_close.reset_trading_info(number)
                 trading_next_open.reset_trading_info(number)
+
+                # 当該取引の時のロットサイズを現在のロットサイズにセットする
+                lot_volumn = trading_close.current_trading_info.lot_volumn
+
                 continue
             else:
                 print('コマンド不正')
                 continue
-
-        # 総資産超過時の処理モードを設定するコマンド
-        if input_str.startswith("allow_over_assets="):
-            command_list = input_str.split('=')
-            if len(command_list) == 2:
-                value = command_list[1]
-
-                if value == 'true':
-                    trading_close.action_mode = trading_close.ACTION_MODE_WARNING
-                    trading_next_open.action_mode = trading_next_open.ACTION_MODE_WARNING
-                elif value == 'false':
-                    trading_close.action_mode = trading_close.ACTION_MODE_FORBIDDEN
-                    trading_next_open.action_mode = trading_next_open.ACTION_MODE_FORBIDDEN
-                else:
-                    print('コマンド不正。値に true または false を指定してください。')
-
-                print('allow_over_assets=' + value)
-            else:
-                print('コマンド不正')
-                
-            continue
         
         # メモ記録のコメント
-        if input_str.startswith("memo "):
+        elif input_str.startswith("memo "):
             command_list = input_str.split()
             if len(command_list) != 3:
                 print('取引情報が入力不正')
@@ -284,10 +314,10 @@ if __name__ == "__main__":
             continue
 
         # アプリを終了させるコマンド
-        if input_str == "exit":
+        elif input_str == "exit":
             sys.exit()
 
-        # 上記のif文に該当しない場合、取引操作として処理する
+        # 上記の条件分岐に該当しない場合、取引操作として処理する
         # 入力チェック
         trading_operation = input_str.split()
         if len(trading_operation) != 2:

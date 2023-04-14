@@ -181,6 +181,7 @@ class Trading:
             self.current_trading_info.long_transaction_number = long_transaction_number
             self.current_trading_info.short_profit = short_profit
             self.current_trading_info.long_profit = long_profit
+            self.current_trading_info.lot_volumn = lot_volumn
 
             # 利益を総資産に加算
             self.current_trading_info.assets = self.current_trading_info.assets + short_profit + long_profit
@@ -260,6 +261,7 @@ class Trading:
         for current_trading_info_tmp in reversed(self.__trading_info_history):
             print(str(i) + ' : ' + current_trading_info_tmp.trading_date.strftime('%Y-%m-%d') 
                 + '  ' + str(current_trading_info_tmp.short_lot) + '-' + str(current_trading_info_tmp.long_lot) 
+                + '  (size: ' +  str(current_trading_info_tmp.lot_volumn) + ')'
                 + '  ¥' + f'{current_trading_info_tmp.assets:,.1f}')
             i = i + 1
 
