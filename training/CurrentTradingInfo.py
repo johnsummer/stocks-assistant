@@ -3,7 +3,7 @@ from datetime import date
 import ShortTrading as st
 import LongTrading as lt
 
-# トレードにおける最新取引の情報モデル
+# トレードにおける最新取引の情報モデル　TODO：最新ではなく、１取引の情報を保存するモデルにリネームする
 class CurrentTradingInfoModel:
 
     trading_date:date               # 最新取引の日付
@@ -20,6 +20,8 @@ class CurrentTradingInfoModel:
     long_trading:lt.LongTrading     # ロングトレードのポジション情報（保有株の総額、株数）
 
     lot_volumn:int                  # 1ロットの株数
+
+    stock_code:str                  # 銘柄コード
 
     assets:float                    # 総資産
 
