@@ -276,14 +276,12 @@ if __name__ == "__main__":
 
                     # 取得できた株価データの範囲を確認するためにCLIでDataFrameを表示する
                     stock_data = stock_info.stock_data_df
-                    print(stock_data)   # TO DELETE
+                    print(stock_data)
 
                     # トレードパラメータの表示、兼入力引数に関する動作確認
                     print('code=' + code)
-                    print('start_date=' + str(start_date))  # TO DELETE
-                    print('end_date=' + str(end_date))      # TO DELETE
-                    print('lot=' + str(lot_volumn))         # TO DELETE
-                    print('assets=￥' + f'{assets_close:,.1f}' + ' - ￥' + f'{assets_open:,.1f}')     # TO DELETE
+                    print('lot=' + str(lot_volumn))
+                    print('assets=￥' + f'{trading_close.current_trading_info.assets:,.1f}' + ' - ￥' + f'{trading_next_open.current_trading_info.assets:,.1f}')
                     print()
 
                     # トレーディングオブジェクトの初期化
