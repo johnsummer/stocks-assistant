@@ -32,7 +32,7 @@ class Trading:
     # 最新取引の情報
     current_trading_info:cti.CurrentTradingInfoModel
 
-    # 直近のトレード履歴(最新10件)を保存するリスト。誤入力の際にトレードの状態を戻すために使う
+    # 直近のトレード履歴(最新30件)を保存するリスト。誤入力の際にトレードの状態を戻すために使う
     __trading_info_history:collections.deque
 
     # トレード履歴の一時保存の最大件数(現在最新の状態＋30件前まで)
@@ -49,7 +49,21 @@ class Trading:
     TRANSACTION_TIME_CLOSE = 0
     TRANSACTION_TIME_NEXT_OPEN = 1
 
-    def __init__(self, stock_info:si.StockInfo, training_start_datetime:str, assets:float=0.0, identifier:str='') -> None:
+    # トレードモード
+    trading_mode:str
+    
+    TRADING_MODE_SINGLE:str = 'single'
+    TRADING_MODE_CHANGEABLE:str = 'changeable'
+
+    # トレード練習関連のフィールド
+
+    # 練習を始めた日時
+    training_start_datetime:str
+
+    # 今回の練習対象となるトレードの開始日
+    trading_start_date:str
+
+    def __init__(self, stock_info:si.StockInfo, training_start_datetime:str, assets:float=0.0, identifier:str='', trading_start_date:str='20130101', trading_mode:str='single') -> None:
         """
         トレードを開始する
         Args:
@@ -60,6 +74,10 @@ class Trading:
             None
         """
         self.stock_info = stock_info
+        self.trading_mode = trading_mode
+
+        self.training_start_datetime = training_start_datetime
+        self.trading_start_date = trading_start_date
 
         # 使わなさそうで、一旦以下の処理をコメントアウトする
         # 入力履歴を保存するcsvファイルを初期化する
@@ -71,12 +89,18 @@ class Trading:
         #         writer = csv.writer(f)
         #         writer.writerow(header)
 
+        code_in_file = ''
+        if self.trading_mode == self.TRADING_MODE_CHANGEABLE:
+            code_in_file = self.TRADING_MODE_CHANGEABLE
+        else:
+            code_in_file = self.stock_info.code
+
         # トレード履歴を保存するcsvファイルを初期化する
-        self.trading_history_csv =  'output/trading_history_' + self.stock_info.code + '_' + self.stock_info.start_date.strftime('%Y%m%d') \
+        self.trading_history_csv =  'output/trading_history_' + code_in_file + '_' + self.trading_start_date \
             + '_' + training_start_datetime + '_' + identifier + '.csv'
         if not os.path.isfile(self.trading_history_csv):
             with open(self.trading_history_csv, 'w', newline='') as f:
-                header = ['取引日付', '株価', '買い株数', '保有株数', '平均取得単価', 'ロング損益', '空売り株数', '空売り中の株数', '平均売り単価', 'ショート損益', '総資産', 'メモ']
+                header = ['銘柄コード', '取引日付', '株価', '買い株数', '保有株数', '平均取得単価', 'ロング損益', '空売り株数', '空売り中の株数', '平均売り単価', 'ショート損益', '総資産', 'メモ']
                 writer = csv.writer(f)
                 writer.writerow(header)
 
@@ -182,6 +206,7 @@ class Trading:
             self.current_trading_info.short_profit = short_profit
             self.current_trading_info.long_profit = long_profit
             self.current_trading_info.lot_volumn = lot_volumn
+            self.current_trading_info.stock_code = self.stock_info.code
 
             # 利益を総資産に加算
             self.current_trading_info.assets = self.current_trading_info.assets + short_profit + long_profit
@@ -189,7 +214,7 @@ class Trading:
             if short_transaction_number != 0 or long_transaction_number != 0:
                 # この配下の処理は取引が発生している場合のみ行う
 
-                # トレードの状態を履歴として保存する(現在最新の取引を含め、最大11件)
+                # トレードの状態を履歴として保存する(現在最新の取引を含め、最大31件)
                 if len(self.__trading_info_history) == self.__MAX_LENGTH_OF_HISTORY:
                     self.__trading_info_history.popleft()
 
@@ -259,11 +284,23 @@ class Trading:
 
         i = 0
         for current_trading_info_tmp in reversed(self.__trading_info_history):
-            print(str(i) + ' : ' + current_trading_info_tmp.trading_date.strftime('%Y-%m-%d') 
+            print(str(i) + ' : ' + current_trading_info_tmp.stock_code 
+                + '  ' + current_trading_info_tmp.trading_date.strftime('%Y-%m-%d') 
                 + '  ' + str(current_trading_info_tmp.short_lot) + '-' + str(current_trading_info_tmp.long_lot) 
                 + '  (size: ' +  str(current_trading_info_tmp.lot_volumn) + ')'
                 + '  ¥' + f'{current_trading_info_tmp.assets:,.1f}')
             i = i + 1
+
+    def get_one_transaction_of_trading_history(self, number:int) -> cti.CurrentTradingInfoModel:
+        """
+        指定した番号に該当した取引の情報を取得する。番号についてはshow_trading_history_in_stack()で確認できる。
+        Args:
+            number (int): 取得したい取引の個数（例：2を指定した場合は2個前の取引の情報を取得する）
+        Returns:
+            None
+        """
+        trading_info = copy.deepcopy(self.__trading_info_history[-1-number])
+        return trading_info
 
     def take_memo_by_date(self, memo_date:date, memo:str) -> int:
         """
@@ -344,6 +381,7 @@ class Trading:
             avg_long_price = self.current_trading_info.long_trading.total_amount_now / self.current_trading_info.long_trading.number_now
 
         trading_info = [
+            self.current_trading_info.stock_code,
             self.current_trading_info.trading_date.strftime('%Y-%m-%d'),
             str(self.current_trading_info.stock_price),
             str(self.current_trading_info.long_transaction_number),

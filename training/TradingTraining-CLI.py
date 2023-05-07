@@ -4,6 +4,8 @@ import sys
 import re
 import traceback
 
+from pandas import DataFrame
+
 from colorama import init
 from termcolor import colored
 
@@ -100,6 +102,15 @@ if __name__ == "__main__":
     assets_close = 10000000
     assets_open = assets_close
 
+    mode = ''
+    code = args.code
+
+    if args.code == 'ca' or args.code == 'changeable':
+        mode = 'changeable'
+        code = 'changeable'
+    else:
+        mode = 'single'
+
     if args.a != None:
         assets_input = args.a.split(',')
         assets_close = float(assets_input[0])
@@ -113,7 +124,7 @@ if __name__ == "__main__":
 
     if args.reopen:
         # トレード再開の場合、各引数の値を上書きする
-        csv_loader = cl.CSVLoader(args.code)
+        csv_loader = cl.CSVLoader(code)
         reopen_choices = list(csv_loader.reopen_trading_items.values())
 
         if len(reopen_choices) == 0:
@@ -121,12 +132,13 @@ if __name__ == "__main__":
             sys.exit()
 
         print('再開可能なトレード候補：')
-        print('番号\t銘柄コード\tトレード開始日\tトレード中断日\t練習開始日時\t中断時の総資産(大引け - 寄付)')
+        print('番号\tトレード開始日\tトレード中断日\t練習開始日時\t中断時の総資産(大引け - 寄付)\t\t最後の銘柄コード')
 
         i = 0
         for choice in reopen_choices:
-            print(str(i) + '\t' + choice.code + '\t\t' + choice.start_date + '\t' + choice.last_trading_date + '\t' 
-                + choice.training_start_datetime + '\t￥' + f'{choice.assets_dict["close"]:,.1f}' + ' - ￥' + f'{choice.assets_dict["open"]:,.1f}')
+            print(str(i) + '\t' + choice.start_date + '\t' + choice.last_trading_date + '\t' 
+                + choice.training_start_datetime + '\t￥' + f'{choice.assets_dict["close"]:,.1f}' + ' - ￥' + f'{choice.assets_dict["open"]:,.1f}'
+                + '\t\t' + choice.last_code)
             i = i + 1
 
         input_str_choice = input('上記の番号から再開したいトレードを選択してください：')
@@ -151,28 +163,36 @@ if __name__ == "__main__":
     if training_start_datetime_str == None:
         training_start_datetime_str = dt.datetime.now().strftime('%Y%m%d%H%M%S')
 
-    print('データ読み込み中。。。')
-    stock_info = si.StockInfo(args.code, start_date, end_date)
-    print('データ読み込み完了。')
 
-    # 取得できた株価データの範囲を確認するためにCLIでDataFrameを表示する
-    stock_data = stock_info.stock_data_df
-    print(stock_data)
+    # モード共通の変数を用意する
+    stock_info:si.StockInfo = None
+    stock_data:DataFrame = None
+    trading_close:tr.Trading = None
+    trading_next_open:tr.Trading = None
 
-    # トレードパラメータの表示、兼入力引数に関する動作確認
-    print('code=' + args.code)
-    print('start_date=' + str(start_date))
-    print('end_date=' + str(end_date))
-    print('lot=' + str(lot_volumn))
-    print('assets=￥' + f'{assets_close:,.1f}' + ' - ￥' + f'{assets_open:,.1f}')
-    print()
+    if mode == 'changeable':
+        print('「銘柄可変」モードでトレードを始めます。')
+        code = None
+    else:
+        print('データ読み込み中。。。')
+        stock_info = si.StockInfo(code, start_date, end_date)
+        print('データ読み込み完了。')
 
-    # 取引記録のファイル出力に関する動作確認用の変数
-    # i = 0
+        # 取得できた株価データの範囲を確認するためにCLIでDataFrameを表示する
+        stock_data = stock_info.stock_data_df
+        print(stock_data)
+
+        # トレードパラメータの表示、兼入力引数に関する動作確認
+        print('code=' + code)
+        print('start_date=' + str(start_date))
+        print('end_date=' + str(end_date))
+        print('lot=' + str(lot_volumn))
+        print('assets=￥' + f'{assets_close:,.1f}' + ' - ￥' + f'{assets_open:,.1f}')
+        print()
 
     # トレーディングオブジェクトの初期化
-    trading_close = tr.Trading(stock_info, training_start_datetime_str, assets_close, 'close')
-    trading_next_open = tr.Trading(stock_info, training_start_datetime_str, assets_open, 'open')
+    trading_close = tr.Trading(stock_info, training_start_datetime_str, assets_close, 'close', start_date_str, mode)
+    trading_next_open = tr.Trading(stock_info, training_start_datetime_str, assets_open, 'open', start_date_str, mode)
 
     # 取引入力における日付の年の部分。Noneでなければ設定されているとする。その場合は年の入力を省くことができる。
     trading_date_year:str = None
@@ -231,6 +251,49 @@ if __name__ == "__main__":
 
             continue
 
+        # トレード対象の銘柄を設定するコマンド
+        elif input_str.startswith('i='):
+            if mode == 'changeable':
+                # ポジションが0-0でないと銘柄を変更させない
+                if trading_close.current_trading_info.long_lot != 0 or \
+                    trading_close.current_trading_info.short_lot != 0 or \
+                    trading_next_open.current_trading_info.long_lot != 0 or \
+                    trading_next_open.current_trading_info.short_lot != 0:
+                    print('ポジションを0-0にして銘柄を変更してください')
+                    continue
+
+
+                command_list = input_str.split('=')
+                if len(command_list) == 2:
+                    if command_list[1] == '':
+                        print('銘柄コードが空になっています。')
+                        continue
+
+                    code = command_list[1]
+                    print('データ読み込み中。。。')
+                    stock_info = si.StockInfo(code, start_date, end_date)
+                    print('データ読み込み完了。')
+
+                    # 取得できた株価データの範囲を確認するためにCLIでDataFrameを表示する
+                    stock_data = stock_info.stock_data_df
+                    print(stock_data)
+
+                    # トレードパラメータの表示、兼入力引数に関する動作確認
+                    print('code=' + code)
+                    print('lot=' + str(lot_volumn))
+                    print('assets=￥' + f'{trading_close.current_trading_info.assets:,.1f}' + ' - ￥' + f'{trading_next_open.current_trading_info.assets:,.1f}')
+                    print()
+
+                    # トレーディングオブジェクトの初期化
+                    trading_close.stock_info = stock_info
+                    trading_next_open.stock_info = stock_info
+                else:
+                    print('コマンド不正')
+            else:
+                print('単独モードでは銘柄変更ができません。')
+            
+            continue
+
         # 総資産超過時の処理モードを設定するコマンド
         elif input_str.startswith("allow_over_assets="):
             command_list = input_str.split('=')
@@ -272,6 +335,12 @@ if __name__ == "__main__":
                     continue
                 
                 number = int(command_list[2])
+
+                trading_info = trading_close.get_one_transaction_of_trading_history(number)
+                if trading_info.stock_code != code:
+                    print('異なる銘柄コードの取引履歴に戻すことができません。')
+                    continue
+
                 trading_close.reset_trading_info(number)
                 trading_next_open.reset_trading_info(number)
 
@@ -318,6 +387,12 @@ if __name__ == "__main__":
             sys.exit()
 
         # 上記の条件分岐に該当しない場合、取引操作として処理する
+
+        # 銘柄コードが指定されているかをチェックする
+        if code is None or code == '' or stock_info is None:
+            print('トレード対象の銘柄を指定されていません。')
+            continue
+
         # 入力チェック
         trading_operation = input_str.split()
         if len(trading_operation) != 2:
