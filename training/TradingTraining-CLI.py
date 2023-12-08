@@ -65,7 +65,8 @@ def display_transaction_detail(trading:tr.Trading, message:str):
         long_price_color = COLOR_LOSS
 
     print('取引日付：' + trading.current_trading_info.trading_date.strftime('%Y-%m-%d')
-        + '\t\t株価：' + f'{trading.current_trading_info.stock_price:,.1f}')
+        + '\t\t株価：' + f'{trading.current_trading_info.stock_price:,.1f}'
+        + '\t\t' + colored('総資産：' + f'{trading.current_trading_info.assets:,.1f}', 'red', attrs=["bold"]))
     print('---------------------')
     # print('売り注文株数：' + str(trading.current_trading_info.short_transaction_number)
     #     + '\t\t売り総株数：' + str(trading.current_trading_info.short_trading.number_now))
@@ -78,9 +79,7 @@ def display_transaction_detail(trading:tr.Trading, message:str):
     print(colored('平均取得単価：' + f'{avg_long_price:,.1f}', on_color=long_price_color)
         + '\t\t保有総額：' + f'{trading.current_trading_info.long_trading.total_amount_now:,.1f}'
         + '\t\t損益(ロング)：' + colored(f'{trading.current_trading_info.long_profit:,.1f}', on_color=long_profit_color))
-    print('---------------------')
-    print(colored('総資産：' + f'{trading.current_trading_info.assets:,.1f}', 'red', attrs=["bold"]))
-    print('---------------------')
+    print('------------------------------------------------------------------------------------')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='トレード練習ツール(CLI版)')
@@ -89,7 +88,7 @@ if __name__ == "__main__":
     parser.add_argument('-s', help='トレード開始日付(yyyymmdd)。デフォルトは2013/01/01')
     parser.add_argument('-e', help='トレード終了日付(yyyymmdd)。デフォルトは実行日付')
     parser.add_argument('-l', help='1ロットの株数。デフォルトは100株')
-    parser.add_argument('-a', help='トレード用の想定金額(初期資産)。デフォルトは1000万(円)。「,」で大引けと寄付注文の資産値をそれぞれ指定できる（トレード再開時に使われる想定）')
+    parser.add_argument('-a', help='トレード用の想定金額(初期資産)。デフォルトは1000万(円)')
     parser.add_argument('-ro', '--reopen', help='トレード再開モードで起動する', action='store_true')
 
     args = parser.parse_args()
@@ -101,6 +100,7 @@ if __name__ == "__main__":
 
     assets_close = 10000000
     assets_open = assets_close
+    assets_opcl = assets_close    # 翌日寄付で注文・大引で手仕舞いの方式の資産
 
     mode = ''
     code = args.code
@@ -112,12 +112,9 @@ if __name__ == "__main__":
         mode = 'single'
 
     if args.a != None:
-        assets_input = args.a.split(',')
-        assets_close = float(assets_input[0])
-        if len(assets_input) > 1:
-            assets_open = float(assets_input[1])
-        else:
-            assets_open = assets_close
+        assets_close = float(args.a)
+        assets_open = assets_close
+        assets_opcl = assets_close
 
     # トレード練習の開始日時（文字列）
     training_start_datetime_str = None
@@ -132,12 +129,13 @@ if __name__ == "__main__":
             sys.exit()
 
         print('再開可能なトレード候補：')
-        print('番号\tトレード開始日\tトレード中断日\t練習開始日時\t中断時の総資産(大引け - 寄付)\t\t最後の銘柄コード')
+        print('番号\tトレード開始日\tトレード中断日\t練習開始日時\t中断時の総資産(大引け - 寄付 - 組合せ)\t\t最後の銘柄コード')
 
         i = 0
         for choice in reopen_choices:
             print(str(i) + '\t' + choice.start_date + '\t' + choice.last_trading_date + '\t' 
-                + choice.training_start_datetime + '\t￥' + f'{choice.assets_dict["close"]:,.1f}' + ' - ￥' + f'{choice.assets_dict["open"]:,.1f}'
+                + choice.training_start_datetime + '\t￥' + f'{choice.assets_dict["close"]:,.1f}' 
+                + ' - ￥' + f'{choice.assets_dict["open"]:,.1f}' + ' - ￥' + f'{choice.assets_dict["opcl"]:,.1f}'
                 + '\t\t' + choice.last_code)
             i = i + 1
 
@@ -157,6 +155,7 @@ if __name__ == "__main__":
         training_start_datetime_str = reopen_trading_info.training_start_datetime
         assets_close = reopen_trading_info.assets_dict['close']
         assets_open = reopen_trading_info.assets_dict['open']
+        assets_opcl =reopen_trading_info.assets_dict['opcl']   # TODO:Noneによりエラーが発生する可能性がある
 
     # 文字列の引数を処理に必要な型に変換
     start_date = dt.datetime.strptime(start_date_str, '%Y%m%d').date()
@@ -169,6 +168,7 @@ if __name__ == "__main__":
     stock_data:DataFrame = None
     trading_close:tr.Trading = None
     trading_next_open:tr.Trading = None
+    trading_opcl:tr.Trading = None
 
     if mode == 'changeable':
         print('「銘柄可変」モードでトレードを始めます。')
@@ -187,12 +187,13 @@ if __name__ == "__main__":
         print('start_date=' + str(start_date))
         print('end_date=' + str(end_date))
         print('lot=' + str(lot_volumn))
-        print('assets=￥' + f'{assets_close:,.1f}' + ' - ￥' + f'{assets_open:,.1f}')
+        print('assets=￥' + f'{assets_close:,.1f}' + ' - ￥' + f'{assets_open:,.1f}' + ' - ￥' + f'{assets_opcl:,.1f}')
         print()
 
     # トレーディングオブジェクトの初期化
     trading_close = tr.Trading(stock_info, training_start_datetime_str, assets_close, 'close', start_date_str, mode)
     trading_next_open = tr.Trading(stock_info, training_start_datetime_str, assets_open, 'open', start_date_str, mode)
+    trading_opcl = tr.Trading(stock_info, training_start_datetime_str, assets_opcl, 'opcl', start_date_str, mode)
 
     # 取引入力における日付の年の部分。Noneでなければ設定されているとする。その場合は年の入力を省くことができる。
     trading_date_year:str = None
@@ -234,7 +235,9 @@ if __name__ == "__main__":
             if trading_close.current_trading_info.long_lot != 0 or \
                 trading_close.current_trading_info.short_lot != 0 or \
                 trading_next_open.current_trading_info.long_lot != 0 or \
-                trading_next_open.current_trading_info.short_lot != 0:
+                trading_next_open.current_trading_info.short_lot != 0 or \
+                trading_opcl.current_trading_info.long_lot != 0 or \
+                trading_opcl.current_trading_info.short_lot != 0:
                 print('ポジションを0-0にしてロットサイズを変更してください')
                 continue
 
@@ -258,7 +261,9 @@ if __name__ == "__main__":
                 if trading_close.current_trading_info.long_lot != 0 or \
                     trading_close.current_trading_info.short_lot != 0 or \
                     trading_next_open.current_trading_info.long_lot != 0 or \
-                    trading_next_open.current_trading_info.short_lot != 0:
+                    trading_next_open.current_trading_info.short_lot != 0 or \
+                    trading_opcl.current_trading_info.long_lot != 0 or \
+                    trading_opcl.current_trading_info.short_lot != 0:
                     print('ポジションを0-0にして銘柄を変更してください')
                     continue
 
@@ -281,12 +286,15 @@ if __name__ == "__main__":
                     # トレードパラメータの表示、兼入力引数に関する動作確認
                     print('code=' + code)
                     print('lot=' + str(lot_volumn))
-                    print('assets=￥' + f'{trading_close.current_trading_info.assets:,.1f}' + ' - ￥' + f'{trading_next_open.current_trading_info.assets:,.1f}')
+                    print('assets=￥' + f'{trading_close.current_trading_info.assets:,.1f}' 
+                          + ' - ￥' + f'{trading_next_open.current_trading_info.assets:,.1f}'
+                          + ' - ￥' + f'{trading_opcl.current_trading_info.assets:,.1f}')
                     print()
 
                     # トレーディングオブジェクトの初期化
                     trading_close.stock_info = stock_info
                     trading_next_open.stock_info = stock_info
+                    trading_opcl.stock_info = stock_info
                 else:
                     print('コマンド不正')
             else:
@@ -303,9 +311,11 @@ if __name__ == "__main__":
                 if value == 'true':
                     trading_close.action_mode = trading_close.ACTION_MODE_WARNING
                     trading_next_open.action_mode = trading_next_open.ACTION_MODE_WARNING
+                    trading_opcl.action_mode = trading_opcl.ACTION_MODE_WARNING
                 elif value == 'false':
                     trading_close.action_mode = trading_close.ACTION_MODE_FORBIDDEN
                     trading_next_open.action_mode = trading_next_open.ACTION_MODE_FORBIDDEN
+                    trading_opcl.action_mode = trading_opcl.ACTION_MODE_FORBIDDEN
                 else:
                     print('コマンド不正。値に true または false を指定してください。')
 
@@ -324,6 +334,8 @@ if __name__ == "__main__":
                     trading_close.show_trading_history_in_stack()
                 elif len(command_list) == 3 and command_list[2] == "open":
                     trading_next_open.show_trading_history_in_stack()
+                elif len(command_list) == 3 and command_list[2] == "opcl":
+                    trading_opcl.show_trading_history_in_stack()
                 else:
                     print('コマンド不正')
                 
@@ -343,6 +355,7 @@ if __name__ == "__main__":
 
                 trading_close.reset_trading_info(number)
                 trading_next_open.reset_trading_info(number)
+                trading_opcl.reset_trading_info(number)
 
                 # 当該取引の時のロットサイズを現在のロットサイズにセットする
                 lot_volumn = trading_close.current_trading_info.lot_volumn
@@ -368,17 +381,22 @@ if __name__ == "__main__":
 
             memo_date = dt.datetime.strptime(memo_date_str, '%Y%m%d').date()
 
-            result_of_taking_memo = None
-            # 大引けの日付を基準でメモを書き込む。寄付のファイルに対しては指定した日付の次の営業日に書き込む
+            result_of_taking_memo_open = None
+            result_of_taking_memo_opcl = None
+            # 大引けの日付を基準でメモを書き込む。寄付、また組合せのファイルに対しては指定した日付の次の営業日に書き込む
             row_number = trading_close.take_memo_by_date(memo_date, command_list[2])
             if row_number != -1:
-                result_of_taking_memo = trading_next_open.take_memo_by_row_number(row_number, command_list[2])
+                result_of_taking_memo_open = trading_next_open.take_memo_by_row_number(row_number, command_list[2])
+                result_of_taking_memo_opcl = trading_opcl.take_memo_by_row_number(row_number, command_list[2])
             else:
                 print("大引け取引のcsvファイルへのメモ記録に失敗しました。指定した日付はトレード履歴がない可能性があります。")
                 continue
 
-            if result_of_taking_memo is None:
+            if result_of_taking_memo_open is None:
                 print("寄付取引のcsvファイルへのメモ記録に失敗しました。")
+            
+            if result_of_taking_memo_opcl is None:
+                print("組合せのcsvファイルへのメモ記録に失敗しました。")
 
             continue
 
@@ -429,19 +447,51 @@ if __name__ == "__main__":
 
             if trading_close_message[0] == 'failure':
                 print(trading_close_message[1])
+                print('Info:大引注文に失敗のため、他の注文を実行しませんでした。')
             else:
                 display_transaction_detail(trading_close, trading_close_message[1])
                 
-                print('■ 翌日注文：')
+                print('■ 翌日寄付注文：')
                 trading_next_open_messege = trading_next_open.one_transaction(trading_date, short_lot, long_lot, lot_volumn, 
                     trading_next_open.TRANSACTION_TIME_NEXT_OPEN)
 
                 if trading_next_open_messege[0] == 'failure':
-                    print(trading_close_message[1])
+                    print(trading_next_open_messege[1])
                     trading_close.reset_trading_info(1)
-                    print('Inof:翌日寄付注文に失敗のため、1取引分の大引け注文を巻き戻す')
+                    print('Info:翌日寄付注文に失敗のため、大引注文を1取引分巻き戻し、組合せ注文を実行しませんでした。')
                 else:
                     display_transaction_detail(trading_next_open, trading_next_open_messege[1])
+
+                    print('■ 組合せ注文：')
+
+                    # 注文タイミングの設定
+                    transaction_time = trading_opcl.TRANSACTION_TIME_NEXT_OPEN
+                    current_short_number = trading_opcl.current_trading_info.short_trading.number_now
+                    current_long_number = trading_opcl.current_trading_info.long_trading.number_now
+
+                    if short_lot == 0 and long_lot == 0:    # 玉持ちで全部手仕舞った場合
+                        transaction_time = trading_opcl.TRANSACTION_TIME_CLOSE
+                    elif ( short_lot == long_lot ):  # スクエアにした場合
+                        transaction_time = trading_opcl.TRANSACTION_TIME_CLOSE
+                    elif ( current_short_number != 0 and current_long_number != 0) \
+                        and (short_lot == 0 or long_lot == 0 ):     # 売買の片方を全部手仕舞い、もう片方は維持する場合
+                        short_number = short_lot * lot_volumn
+                        long_number = long_lot * lot_volumn
+                        if short_number == current_short_number or long_number == current_long_number:
+                            transaction_time = trading_opcl.TRANSACTION_TIME_CLOSE
+
+                    # 上記以外の場合は初期値にする
+
+                    trading_opcl_messege = trading_opcl.one_transaction(trading_date, short_lot, long_lot, lot_volumn, 
+                        transaction_time)
+
+                    if trading_opcl_messege[0] == 'failure':
+                        print(trading_opcl_messege[1])
+                        trading_close.reset_trading_info(1)
+                        trading_next_open.reset_trading_info(1)
+                        print('Info:組合せ文に失敗のため、他の注文を1取引分巻き戻しました。')
+                    else:
+                        display_transaction_detail(trading_opcl, trading_opcl_messege[1])
 
         except Exception as e:
             print('入力不正')

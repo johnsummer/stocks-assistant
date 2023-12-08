@@ -28,7 +28,7 @@ class CSVLoader:
 
             # print(file.name)
 
-            # ファイル名は　trading_history_[銘柄コード]_[株データの開始日]_[トレード練習実施開始日時分秒]_[close/open].csv　の前提で解析を始める
+            # ファイル名は　trading_history_[銘柄コード]_[株データの開始日]_[トレード練習実施開始日時分秒]_[close/open/opcl].csv　の前提で解析を始める
             file_name_objects = file.stem.split('_')
             df_csv = pd.read_csv(file, encoding="shift-jis")
             if len(df_csv) == 0:

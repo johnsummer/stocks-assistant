@@ -118,8 +118,8 @@ class Trading:
         1回の取引を行う
         Args:
             trading_date (date): 取引の日付
-            short_lot (int): 該当日に持っている空売りのロット数
-            long_lot (int): 該当日に持っている買いのロット数
+            short_lot (int): 取引後に持っている空売りのロット数
+            long_lot (int): 取引後に持っている買いのロット数
             lot_volumn (int): 1注文単位のロット数
             transaction_time (int): 注文タイミング（大引け:0、翌日寄付:1）
         Returns:
