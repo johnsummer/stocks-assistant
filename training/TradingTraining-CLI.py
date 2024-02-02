@@ -81,6 +81,51 @@ def display_transaction_detail(trading:tr.Trading, message:str):
         + '\t\t損益(ロング)：' + colored(f'{trading.current_trading_info.long_profit:,.1f}', on_color=long_profit_color))
     print('------------------------------------------------------------------------------------')
 
+# ロットサイズ計算用の定数の定義
+HEDGE_RATIO = 1 # 1銘柄のトレードにおけるヘッジ数と本玉数の比例
+NUM_OF_SYMBOLS = 2 # 同時にトレードしていい銘柄数
+
+# ロットのサイズを計算する関数
+def calculate_lot_size(assets, num_of_stocks=5, stock_price=None):
+    """ロットのサイズを計算する関数
+
+    Args:
+        assets (int): トレードで導入する資金
+        num_of_stocks (int, optional): 1銘柄のトレードにおける本玉数. Defaults to 5.
+        stock_price (int): 株価
+
+    Returns:
+        int: ロットのサイズ（100の桁まで切り捨てる）
+        -1: 引数に誤りがある場合
+    """
+
+    # 引数のチェック
+    if stock_price is None:
+        # 株価が入力されていない場合はエラーメッセージを表示し、-1を返す
+        print("株価を入力してください。")
+        return -1
+    if assets <= 0:
+        # 資金が0以下の場合はエラーメッセージを表示し、-1を返す
+        print("資金は正の値で入力してください。")
+        return -1
+    if num_of_stocks <= 0:
+        # 本玉数が0以下の場合はエラーメッセージを表示し、-1を返す
+        print("本玉数は正の値で入力してください。")
+        return -1
+    
+    # ロットのサイズの計算
+    max_amount = assets * 3.3 # トレードで注文できる最大金額
+    hedge_num = num_of_stocks * HEDGE_RATIO # ヘッジ数は本玉数と比例する
+    lot_size = max_amount / ((hedge_num + num_of_stocks) * NUM_OF_SYMBOLS * stock_price * 1.1) # ロットのサイズの計算式
+    lot_size = int(lot_size // 100 * 100) # ロットのサイズを100の桁まで切り捨てる
+
+    if lot_size < 100:
+        # ロットのサイズが100未満の場合は100にするとともに、警告メッセージを表示する
+        lot_size = 100
+        print("注意：株価が高すぎて既定の規則で計算したロットのサイズは100株未満になってしまいましたので、一旦100株にしました。")
+    
+    return lot_size
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='トレード練習ツール(CLI版)')
 
@@ -238,7 +283,7 @@ if __name__ == "__main__":
                 trading_next_open.current_trading_info.short_lot != 0 or \
                 trading_opcl.current_trading_info.long_lot != 0 or \
                 trading_opcl.current_trading_info.short_lot != 0:
-                print('ポジションを0-0にしてロットサイズを変更してください')
+                print('ポジションを0-0にしてからロットサイズを変更してください')
                 continue
 
             lot_setting_input = input_str.split('=')
@@ -397,6 +442,60 @@ if __name__ == "__main__":
             
             if result_of_taking_memo_opcl is None:
                 print("組合せのcsvファイルへのメモ記録に失敗しました。")
+
+            continue
+
+        # ロットサイズを再計算するコマンド
+        elif input_str.startswith("lr "):
+            
+            # ポジションが0-0でないとロットサイズ変更させない
+            if trading_close.current_trading_info.long_lot != 0 or \
+                trading_close.current_trading_info.short_lot != 0 or \
+                trading_next_open.current_trading_info.long_lot != 0 or \
+                trading_next_open.current_trading_info.short_lot != 0 or \
+                trading_opcl.current_trading_info.long_lot != 0 or \
+                trading_opcl.current_trading_info.short_lot != 0:
+                print('ポジションを0-0にしてからロットサイズを再計算してください')
+                continue
+
+            lot_resizing_input = input_str.split(' ')
+            if len(lot_resizing_input) == 2 or len(lot_resizing_input) == 3:
+                try:
+                    # 計算基準の日付
+                    base_date_str = lot_resizing_input[1] if trading_date_year == None else trading_date_year + lot_resizing_input[1]
+
+                    # 日付の入力チェック（桁数だけ）
+                    if not re.compile('[0-9]{8}').search(base_date_str):
+                        print('日付のフォーマットが不正')
+                        continue
+
+                    base_date:dt.date
+                    base_date = dt.datetime.strptime(base_date_str, '%Y%m%d')
+
+                    stock_data = stock_info.stock_data_df[stock_info.stock_data_df.index == base_date.strftime('%Y-%m-%d')]
+                    if len(stock_data) == 0:
+                        print('入力された日付のデータはない。その日は祝日か、取得期間外の日付かもしれない。')
+                        continue
+
+                    stock_price = float(stock_data['Close']) # 計算基準日の終値で計算する（ロット再計算しようと思う時、翌日の始値がわからないので）
+                    assets = min(trading_close.current_trading_info.assets, 
+                                 trading_next_open.current_trading_info.assets, 
+                                 trading_opcl.current_trading_info.assets)
+                    lot_max_number = 5 if len(lot_resizing_input) == 3 else int(lot_resizing_input[2])
+
+                    lot_volumn = calculate_lot_size(assets, lot_max_number, stock_price)
+                    if lot_volumn <= 0:
+                        print('ロットサイズの再計算で問題が発生しました。必要な場合は「l=ロットサイズ」で指定してください。')
+                        continue
+
+                    print('下記の条件でロットサイズを再計算しました。ロットサイズ：' + str(lot_volumn))
+                    print('導入資産：' + f'{assets:,.1f}' + ', 同時トレード銘柄数：' + str(NUM_OF_SYMBOLS) 
+                          + ', 本玉数：' + str(lot_max_number) + ', 株価：' + f'{stock_price:,.1f}')
+                except Exception as e:
+                    print('ロットサイズの再計算で問題が発生しました。')
+                    print(traceback.format_exc())
+            else:
+                print('コマンド不正')
 
             continue
 
