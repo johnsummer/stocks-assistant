@@ -13,6 +13,7 @@ import Trading as tr
 import StockInfo as si
 import CSVLoader as cl
 import ReopenTradingInfo as rti
+import data_analysis.OutputAnalysis as oa
 
 # 1取引を行った後のトレード詳細情報を表示する
 def display_transaction_detail(trading:tr.Trading, message:str):
@@ -139,16 +140,55 @@ if __name__ == "__main__":
                 + '\t\t' + choice.last_code)
             i = i + 1
 
-        input_str_choice = input('上記の番号から再開したいトレードを選択してください：')
-        if input_str_choice == "exit":
-            sys.exit()
+        input_str_choice = input('実行コマンド、または再開したいトレードの番号を入力してください：')
 
-        while int(input_str_choice) >= i or int(input_str_choice) < 0:
-            print('範囲外の番号を選択されています。もう一度入力しなおしてください。')
-            input_str_choice = input('上記の番号から再開したいトレードを選択してください：')
-            if input_str_choice == "exit":
-                sys.exit()
+        # 一つの数字を入力されるまで繰り返す
+        while True:
+            try:
+                if input_str_choice == "exit":
+                    sys.exit()
 
+                input_commands = input_str_choice.split(' ')
+
+                # 再開対象のサマリーを出力する
+                if input_str_choice.startswith('summary '):
+                    csv_file = ''
+                    output_to_file = False
+                    reopen_trading_info:rti.ReopenTradingInfo = reopen_choices[int(input_commands[1])]
+                    if len(input_commands) == 2:
+                        csv_file = reopen_trading_info.file_list['close']
+                    elif len(input_commands) == 3 or len(input_commands) == 4:
+                        if input_commands[2] == 'close':
+                            csv_file = reopen_trading_info.file_list['close']
+                        elif input_commands[2] == 'opcl':
+                            csv_file = reopen_trading_info.file_list['opcl']
+                        elif input_commands[2] == 'open':
+                            csv_file = reopen_trading_info.file_list['open']
+                        elif input_commands[2] == 'output':
+                            csv_file = reopen_trading_info.file_list['close']
+                        else:
+                            print('コマンドが不正です。')
+                    else:
+                        print('コマンドが不正です。')
+                    
+                    if csv_file != '' and input_commands[-1] == 'output':
+                        output_to_file = True
+
+                    if csv_file != '':
+                        oa.aggregate_csv(csv_file, output_to_file)
+
+                if input_str_choice.isdigit():
+                    if int(input_str_choice) >= i or int(input_str_choice) < 0:
+                        print('範囲外の番号を選択されています。もう一度入力しなおしてください。')
+                    else:
+                        break
+            except Exception as e:
+                print('入力不正')
+                print(traceback.format_exc())
+
+            input_str_choice = input('実行コマンド、または再開したいトレードの番号を入力してください：')
+
+        # csvからデータを読み込んでトレードの状態を復元する
         reopen_trading_info:rti.ReopenTradingInfo = reopen_choices[int(input_str_choice)]
 
         start_date_str = reopen_trading_info.start_date

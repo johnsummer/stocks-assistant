@@ -41,11 +41,11 @@ class CSVLoader:
 
             if file_name_objects[2] + file_name_objects[3] + file_name_objects[4] not in self.reopen_trading_items:
                 reopen_trading_info = rti.ReopenTradingInfo(last_code, file_name_objects[3], file_name_objects[4], last_trading_date)
-                reopen_trading_info.add_file(file)
+                reopen_trading_info.add_file(file_name_objects[5], file)
                 reopen_trading_info.add_assets(file_name_objects[5], assets)
                 self.reopen_trading_items[file_name_objects[2] + file_name_objects[3] + file_name_objects[4]] = reopen_trading_info
             else:
-                self.reopen_trading_items[file_name_objects[2] + file_name_objects[3] + file_name_objects[4]].add_file(file)
+                self.reopen_trading_items[file_name_objects[2] + file_name_objects[3] + file_name_objects[4]].add_file(file_name_objects[5], file)
                 self.reopen_trading_items[file_name_objects[2] + file_name_objects[3] + file_name_objects[4]].add_assets(file_name_objects[5], assets)
 
 

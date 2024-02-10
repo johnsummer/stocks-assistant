@@ -7,7 +7,7 @@ class ReopenTradingInfo:
     training_start_datetime:str
     last_trading_date:str
 
-    file_list:list      # TO_DELETE 要らないかも
+    file_list:dict
     assets_dict:dict
 
     def __init__(self, last_code:str, start_date:str, training_start_datetime:str, last_trading_date:str) -> None:
@@ -25,10 +25,10 @@ class ReopenTradingInfo:
         self.start_date = start_date
         self.training_start_datetime = training_start_datetime
         self.last_trading_date = last_trading_date
-        self.file_list = []
+        self.file_list = {}
         self.assets_dict = {}
 
-    def add_file(self, csv_file:Path):
+    def add_file(self, key:str, csv_file:Path):
         """
         本トレード再開情報に紐付けたいCSVファイルを追加する
         Args:
@@ -36,7 +36,7 @@ class ReopenTradingInfo:
         Returns:
             None
         """
-        self.file_list.append(csv_file)
+        self.file_list[key] = csv_file
 
     def add_assets(self, key:str, assets:float):
         self.assets_dict[key] = assets
