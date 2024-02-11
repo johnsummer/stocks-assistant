@@ -136,3 +136,4 @@ dmypy.json
 
 # VS Code configuration file
 /.vscode
+/.vs
