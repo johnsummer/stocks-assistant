@@ -566,16 +566,15 @@ if __name__ == "__main__":
                     if short_lot == 0 and long_lot == 0:    # 玉持ちで全部手仕舞った場合
                         transaction_time = trading_opcl.TRANSACTION_TIME_CLOSE
                     elif ( short_lot == long_lot ):  # スクエアにした場合
-                        transaction_time = trading_opcl.TRANSACTION_TIME_CLOSE
+                        transaction_time = trading_opcl.TRANSACTION_TIME_NEXT_OPEN
                     elif ( current_short_number != 0 and current_long_number != 0) \
                         and (short_lot == 0 or long_lot == 0 ):     # 売買の片方を全部手仕舞い、もう片方は維持する場合
                         short_number = short_lot * lot_volumn
                         long_number = long_lot * lot_volumn
                         if short_number == current_short_number or long_number == current_long_number:
-                            transaction_time = trading_opcl.TRANSACTION_TIME_CLOSE
+                            transaction_time = trading_opcl.TRANSACTION_TIME_NEXT_OPEN
 
                     # 上記以外の場合は初期値にする
-
                     trading_opcl_messege = trading_opcl.one_transaction(trading_date, short_lot, long_lot, lot_volumn, 
                         transaction_time)
 
