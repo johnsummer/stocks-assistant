@@ -484,7 +484,7 @@ if __name__ == "__main__":
                         continue
 
                     print('下記の条件でロットサイズを再計算しました。ロットサイズ：' + str(lot_volumn))
-                    print('導入資産：' + f'{assets:,.1f}' + ', 想定玉数：' + str(lot_number) + ', 株価：' + f'{stock_price:,.1f}')
+                    print('導入資産：' + f'{assets:,.1f}' + ', 想定総玉数：' + str(lot_number) + ', 株価：' + f'{stock_price:,.1f}')
                 except Exception as e:
                     print('ロットサイズの再計算で問題が発生しました。')
                     print(traceback.format_exc())

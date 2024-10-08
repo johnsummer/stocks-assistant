@@ -363,7 +363,7 @@ class Trading:
 
         Args:
             assets (int): トレードで導入する資金
-            num_of_stocks (int, optional): 想定の総玉数. Defaults to 20.
+            num_of_stocks (int, optional): 想定総玉数. Defaults to 20.
             stock_price (int): 株価
 
         Returns:
