@@ -476,16 +476,15 @@ if __name__ == "__main__":
                     assets = min(trading_close.current_trading_info.assets, 
                                  trading_next_open.current_trading_info.assets, 
                                  trading_opcl.current_trading_info.assets)
-                    lot_max_number = 5 if len(lot_resizing_input) == 2 else int(lot_resizing_input[2])
+                    lot_number = 20 if len(lot_resizing_input) == 2 else int(lot_resizing_input[2])
 
-                    lot_volumn = tr.Trading.calculate_lot_size(assets, lot_max_number, stock_price)
+                    lot_volumn = tr.Trading.calculate_lot_size(assets, lot_number, stock_price)
                     if lot_volumn <= 0:
                         print('ロットサイズの再計算で問題が発生しました。必要な場合は「l=ロットサイズ」で指定してください。')
                         continue
 
                     print('下記の条件でロットサイズを再計算しました。ロットサイズ：' + str(lot_volumn))
-                    print('導入資産：' + f'{assets:,.1f}' + ', 同時トレード銘柄数：' + str(tr.Trading.NUM_OF_SYMBOLS) 
-                          + ', 本玉数：' + str(lot_max_number) + ', 株価：' + f'{stock_price:,.1f}')
+                    print('導入資産：' + f'{assets:,.1f}' + ', 想定玉数：' + str(lot_number) + ', 株価：' + f'{stock_price:,.1f}')
                 except Exception as e:
                     print('ロットサイズの再計算で問題が発生しました。')
                     print(traceback.format_exc())

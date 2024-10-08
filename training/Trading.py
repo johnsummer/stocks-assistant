@@ -355,19 +355,15 @@ class Trading:
         else:
             return None
 
-    # ロットサイズ計算用の定数の定義
-    HEDGE_RATIO = 1 # 1銘柄のトレードにおけるヘッジ数と本玉数の比例
-    NUM_OF_SYMBOLS = 2 # 同時にトレードしていい銘柄数
-
     # ロットのサイズを計算する関数
     # TODO：クラスメソッドとして用意するのは少し違和感があるが、一旦このまま
     @classmethod
-    def calculate_lot_size(self, assets, num_of_stocks=5, stock_price=None):
+    def calculate_lot_size(self, assets, num_of_stocks=20, stock_price=None):
         """ロットのサイズを計算する関数
 
         Args:
             assets (int): トレードで導入する資金
-            num_of_stocks (int, optional): 1銘柄のトレードにおける本玉数. Defaults to 5.
+            num_of_stocks (int, optional): 想定の総玉数. Defaults to 20.
             stock_price (int): 株価
 
         Returns:
@@ -385,14 +381,13 @@ class Trading:
             print("資金は正の値で入力してください。")
             return -1
         if num_of_stocks <= 0:
-            # 本玉数が0以下の場合はエラーメッセージを表示し、-1を返す
-            print("本玉数は正の値で入力してください。")
+            # 玉数が0以下の場合はエラーメッセージを表示し、-1を返す
+            print("玉数は正の値で入力してください。")
             return -1
         
         # ロットのサイズの計算
         max_amount = assets * 3.3 # トレードで注文できる最大金額
-        hedge_num = num_of_stocks * self.HEDGE_RATIO # ヘッジ数は本玉数と比例する
-        lot_size = max_amount / ((hedge_num + num_of_stocks) * self.NUM_OF_SYMBOLS * stock_price * 1.1) # ロットのサイズの計算式
+        lot_size = max_amount / (num_of_stocks * stock_price * 1.1) # ロットのサイズの計算式
         lot_size = int(lot_size // 100 * 100) # ロットのサイズを100の桁まで切り捨てる
 
         if lot_size < 100:
