@@ -46,8 +46,8 @@ class Trading:
 
     amount_checker:amchkr.AmountChecker
 
-    TRANSACTION_TIME_CLOSE = 0
-    TRANSACTION_TIME_NEXT_OPEN = 1
+    ORDER_TIME_CLOSE = 0
+    ORDER_TIME_NEXT_OPEN = 1
 
     # トレードモード
     trading_mode:str
@@ -113,7 +113,7 @@ class Trading:
         self.amount_checker = amchkr.AmountChecker()
         self.action_mode = self.ACTION_MODE_FORBIDDEN
 
-    def one_transaction(self, trading_date:date, short_lot:int, long_lot:int, lot_volumn:int=100, transaction_time:int=0) -> Tuple[str, str]:
+    def one_transaction(self, trading_date:date, short_lot:int, long_lot:int, lot_volumn:int=100, order_time:int=0) -> Tuple[str, str]:
         """
         1回の取引を行う
         Args:
@@ -133,7 +133,7 @@ class Trading:
             stock_price = 0
             stock_data = None
             
-            if transaction_time == self.TRANSACTION_TIME_CLOSE:
+            if order_time == self.ORDER_TIME_CLOSE:
                 # 大引けでの注文
                 stock_data = self.stock_info.stock_data_df[self.stock_info.stock_data_df.index == trading_date.strftime('%Y-%m-%d')]
                 if len(stock_data) == 0:

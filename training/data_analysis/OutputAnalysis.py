@@ -14,15 +14,19 @@ def __calc_lot_size(x):
     # 最大公約数を返す
     return gcd
 
-def aggregate_csv(csv_path:str, output_to_file:bool):
+def aggregate_csv(csv_path:str, output_to_file:bool) -> str:
     """
         指定されたトレード履歴のCSVファイルに対して所定の規則で集計する。
         Args:
-            csv_path (str): 集計対象のCSVファイル
+            order_mode (str): 集計対象のトレードの注文モード。close/open/opcl
             output_to_file (bool): 集計結果をCSVファイルに出力するか。Trueの場合は出力する。
         Returns:
             None
         """
+    
+    if csv_path == '':
+        return '対象ファイルを設定されていません。'
+
     # csvファイルを読み込む
     df = pd.read_csv(csv_path, encoding="shift-jis")
 
@@ -62,13 +66,14 @@ def aggregate_csv(csv_path:str, output_to_file:bool):
     # 保有株数リストと空売り中の株数リストと合計最大株数と最初の総資産と最後の総資産の列を削除する
     df_agg = df_agg.drop(["保有株数リスト", "空売り中の株数リスト", "合計最大株数", "最初の総資産", "最後の総資産"], axis=1)
     # 結果を出力する
-    print(df_agg)
 
     # CSVファイルに出力
     if output_to_file:
         # CSVには数値として保存したいので、¥を取り除く
         df_agg["資産増額"] = df_agg["資産増額"].str.replace("¥", "")
         df_agg.to_csv(str(csv_path).replace('_history_', '_summary_'), index=False, encoding="shift-jis")
+
+    return df_agg.to_string()
 
 # テスト用
 # aggregate_csv('output/trading_history_changeable_20000101_20240203112409_opcl.csv')

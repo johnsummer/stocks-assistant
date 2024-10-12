@@ -150,36 +150,42 @@ if __name__ == "__main__":
 
                 input_commands = input_str_choice.split(' ')
 
-                # 再開対象のサマリーを出力する
+                # 再開対象の番号を基にサマリーを出力する
                 if input_str_choice.startswith('summary '):
-                    csv_file = ''
+                    csv_path = ''
                     output_to_file = False
-                    reopen_trading_info:rti.ReopenTradingInfo = reopen_choices[int(input_commands[1])]
-                    if len(input_commands) == 2:
-                        csv_file = reopen_trading_info.file_list['close']
-                    elif len(input_commands) == 3 or len(input_commands) == 4:
-                        if input_commands[2] == 'close':
-                            csv_file = reopen_trading_info.file_list['close']
-                        elif input_commands[2] == 'opcl':
-                            csv_file = reopen_trading_info.file_list['opcl']
-                        elif input_commands[2] == 'open':
-                            csv_file = reopen_trading_info.file_list['open']
-                        elif input_commands[2] == 'output':
-                            csv_file = reopen_trading_info.file_list['close']
+                    valid_input = True
+
+                    if len(input_commands) >= 2 or len(input_commands) <= 4:
+                        reopen_trading_info:rti.ReopenTradingInfo = reopen_choices[int(input_commands[1])]
+
+                        if len(input_commands) > 2:
+                            if input_commands[2] == 'close' or input_commands[2] == 'opcl' or input_commands[2] == 'open':
+                                csv_path = reopen_trading_info.file_list[input_commands[2]]
+                                
+                                if len(input_commands) == 4:
+                                    if input_commands[3] == 'output':
+                                        output_to_file = True
+                                    else:
+                                        valid_input = False
+                            else:
+                                valid_input = False
                         else:
-                            print('コマンドが不正です。')
+                            csv_path = reopen_trading_info.file_list['close']                    
+                    else:
+                        valid_input = False
+
+                    if valid_input:
+                        output_str = oa.aggregate_csv(csv_path, output_to_file)
+                        print(output_str)
                     else:
                         print('コマンドが不正です。')
-                    
-                    if csv_file != '' and input_commands[-1] == 'output':
-                        output_to_file = True
 
-                    if csv_file != '':
-                        oa.aggregate_csv(csv_file, output_to_file)
-
+                # 再開対象の番号を入力する
                 if input_str_choice.isdigit():
                     if int(input_str_choice) >= i or int(input_str_choice) < 0:
                         print('範囲外の番号を選択されています。もう一度入力しなおしてください。')
+                        continue
                     else:
                         break
             except Exception as e:
@@ -195,7 +201,7 @@ if __name__ == "__main__":
         training_start_datetime_str = reopen_trading_info.training_start_datetime
         assets_close = reopen_trading_info.assets_dict['close']
         assets_open = reopen_trading_info.assets_dict['open']
-        assets_opcl =reopen_trading_info.assets_dict['opcl']   # TODO:Noneによりエラーが発生する可能性がある
+        assets_opcl = reopen_trading_info.assets_dict['opcl']   # TODO:Noneによりエラーが発生する可能性がある
 
     # 文字列の引数を処理に必要な型に変換
     start_date = dt.datetime.strptime(start_date_str, '%Y%m%d').date()
@@ -493,6 +499,43 @@ if __name__ == "__main__":
 
             continue
 
+        # 現在実施中のトレードに対して、ここまでのサマリーを確認・ファイルに出力する
+        elif input_str.startswith('summary'):
+            csv_path = ''
+            output_to_file = False
+            valid_input = True
+
+            input_commands = input_str.split(' ')
+            if len(input_commands) >= 1 or len(input_commands) <= 3:
+
+                if len(input_commands) > 1:
+                    if input_commands[1] == 'close':
+                        csv_path = trading_close.trading_history_csv
+                    elif input_commands[1] == 'opcl':
+                        csv_path = trading_opcl.trading_history_csv
+                    elif input_commands[1] == 'open':
+                        csv_path = trading_next_open.trading_history_csv
+                    else:
+                        valid_input = False
+                    
+                    if len(input_commands) == 3:
+                        if input_commands[2] == 'output':
+                            output_to_file = True
+                        else:
+                            valid_input = False 
+                else:
+                    csv_path = trading_close.trading_history_csv
+            else:
+                valid_input = False
+
+            if valid_input:
+                output_str = oa.aggregate_csv(csv_path, output_to_file)
+                print(output_str)
+            else:
+                print('コマンドが不正です。')
+            
+            continue
+
         # アプリを終了させるコマンド
         elif input_str == "exit":
             sys.exit()
@@ -536,7 +579,7 @@ if __name__ == "__main__":
 
             print('■ 大引け注文：')
             trading_close_message = trading_close.one_transaction(trading_date, short_lot, long_lot, lot_volumn, 
-                trading_close.TRANSACTION_TIME_CLOSE)
+                trading_close.ORDER_TIME_CLOSE)
 
             if trading_close_message[0] == 'failure':
                 print(trading_close_message[1])
@@ -546,7 +589,7 @@ if __name__ == "__main__":
                 
                 print('■ 翌日寄付注文：')
                 trading_next_open_messege = trading_next_open.one_transaction(trading_date, short_lot, long_lot, lot_volumn, 
-                    trading_next_open.TRANSACTION_TIME_NEXT_OPEN)
+                    trading_next_open.ORDER_TIME_NEXT_OPEN)
 
                 if trading_next_open_messege[0] == 'failure':
                     print(trading_next_open_messege[1])
@@ -558,20 +601,20 @@ if __name__ == "__main__":
                     print('■ 組合せ注文：')
 
                     # 注文タイミングの設定
-                    transaction_time = trading_opcl.TRANSACTION_TIME_NEXT_OPEN
+                    transaction_time = trading_opcl.ORDER_TIME_NEXT_OPEN
                     current_short_number = trading_opcl.current_trading_info.short_trading.number_now
                     current_long_number = trading_opcl.current_trading_info.long_trading.number_now
 
                     if short_lot == 0 and long_lot == 0:    # 玉持ちで全部手仕舞った場合
-                        transaction_time = trading_opcl.TRANSACTION_TIME_CLOSE
+                        transaction_time = trading_opcl.ORDER_TIME_CLOSE
                     elif ( short_lot == long_lot ):  # スクエアにした場合
-                        transaction_time = trading_opcl.TRANSACTION_TIME_NEXT_OPEN
+                        transaction_time = trading_opcl.ORDER_TIME_NEXT_OPEN
                     elif ( current_short_number != 0 and current_long_number != 0) \
                         and (short_lot == 0 or long_lot == 0 ):     # 売買の片方を全部手仕舞い、もう片方は維持する場合
                         short_number = short_lot * lot_volumn
                         long_number = long_lot * lot_volumn
                         if short_number == current_short_number or long_number == current_long_number:
-                            transaction_time = trading_opcl.TRANSACTION_TIME_NEXT_OPEN
+                            transaction_time = trading_opcl.ORDER_TIME_NEXT_OPEN
 
                     # 上記以外の場合は初期値にする
                     trading_opcl_messege = trading_opcl.one_transaction(trading_date, short_lot, long_lot, lot_volumn, 
