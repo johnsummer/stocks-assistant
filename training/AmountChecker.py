@@ -20,13 +20,13 @@ class AmountChecker:
         """
         pass
 
-    def check_amount(self, current_trading_info:cti.CurrentTradingInfoModel, short_transaction_amount:float = 0, long_transaction_amount:float = 0):
+    def check_amount(self, current_trading_info:cti.CurrentTradingInfoModel, short_order_amount:float = 0, long_order_amount:float = 0):
         """
         仮に現在の注文が成立した場合、空売り・買い注文の総額が総資産を超過しているかをチェックする
         Args:
             current_trading_info(CurrentTradingInfo.CurrentTradingInfoModel) : 現時点のトレード状態(総資産、空売り総額、買い総額など)を保存しているオブジェクト
-            short_transaction_amount(float) : 空売り注文しようとする金額
-            long_transaction_amount(float) : 買い注文しようとする金額
+            short_order_amount(float) : 空売り注文しようとする金額
+            long_order_amount(float) : 買い注文しようとする金額
         Returns:
             int:
                 AmountChecker.CHECK_RESULT_OK(0) : 超過していない
@@ -37,8 +37,8 @@ class AmountChecker:
         """
 
         # 仮に現在の注文が成立した場合の空売り・買い注文総額を計算する
-        short_amount = current_trading_info.short_trading.total_amount_now + short_transaction_amount
-        long_amount = current_trading_info.long_trading.total_amount_now + long_transaction_amount
+        short_amount = current_trading_info.short_trading.total_amount_now + short_order_amount
+        long_amount = current_trading_info.long_trading.total_amount_now + long_order_amount
         assets = current_trading_info.assets
 
         # 注文総額と総資産を比較する
