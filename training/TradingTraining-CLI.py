@@ -503,10 +503,11 @@ if __name__ == "__main__":
         elif input_str.startswith('summary'):
             csv_path = ''
             output_to_file = False
+            line_number = 10
             valid_input = True
 
             input_commands = input_str.split(' ')
-            if len(input_commands) >= 1 or len(input_commands) <= 3:
+            if len(input_commands) <= 4:
 
                 if len(input_commands) > 1:
                     if input_commands[1] == 'close':
@@ -518,18 +519,21 @@ if __name__ == "__main__":
                     else:
                         valid_input = False
                     
-                    if len(input_commands) == 3:
-                        if input_commands[2] == 'output':
-                            output_to_file = True
-                        else:
-                            valid_input = False 
+                    if len(input_commands) > 2:
+                        for command in input_commands[2:]:
+                            if command == 'output':
+                                output_to_file = True
+                            elif command == 'all':
+                                line_number = -1
+                            else:
+                                valid_input = False 
                 else:
                     csv_path = trading_close.trading_history_csv
             else:
                 valid_input = False
 
             if valid_input:
-                output_str = oa.aggregate_csv(csv_path, output_to_file)
+                output_str = oa.aggregate_csv(csv_path, output_to_file, line_number)
                 print(output_str)
             else:
                 print('コマンドが不正です。')
