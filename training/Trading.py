@@ -113,7 +113,7 @@ class Trading:
         self.amount_checker = amchkr.AmountChecker()
         self.action_mode = self.ACTION_MODE_FORBIDDEN
 
-    def one_transaction(self, trading_date:date, short_lot:int, long_lot:int, lot_volumn:int=100, order_time:int=0) -> Tuple[str, str]:
+    def one_order(self, trading_date:date, short_lot:int, long_lot:int, lot_volumn:int=100, order_time:int=0) -> Tuple[str, str]:
         """
         1回の取引を行う
         Args:
@@ -121,7 +121,7 @@ class Trading:
             short_lot (int): 取引後に持っている空売りのロット数
             long_lot (int): 取引後に持っている買いのロット数
             lot_volumn (int): 1注文単位のロット数
-            transaction_time (int): 注文タイミング（大引け:0、翌日寄付:1）
+            order_time (int): 注文タイミング（大引け:0、翌日寄付:1）
         Returns:
             Tuple[str, str]: 'success'/'failure', 付属のメッセージ
         """
@@ -161,48 +161,48 @@ class Trading:
 
             # ショート注文の準備
             short_lot_volumn = short_lot * lot_volumn
-            short_transaction_number = short_lot_volumn - self.current_trading_info.short_trading.number_now
+            short_order_number = short_lot_volumn - self.current_trading_info.short_trading.number_now
             short_profit = 0
 
             # ロング注文の準備
             long_lot_volumn = long_lot * lot_volumn
-            long_transaction_number = long_lot_volumn - self.current_trading_info.long_trading.number_now
+            long_order_number = long_lot_volumn - self.current_trading_info.long_trading.number_now
             long_profit = 0
 
             # 総資産超過のチェック
-            short_transaction_amount = short_transaction_number * stock_price
-            long_transaction_amount = long_transaction_number * stock_price
-            check_result = self.amount_checker.check_amount(self.current_trading_info, short_transaction_amount, long_transaction_amount)
+            short_order_amount = short_order_number * stock_price
+            long_order_amount = long_order_number * stock_price
+            check_result = self.amount_checker.check_amount(self.current_trading_info, short_order_amount, long_order_amount)
 
             amount_check_message = ''
 
             # チェックが通らない場合の処理
             if check_result != amchkr.AmountChecker.CHECK_RESULT_OK:
-                amount_check_message = self.__asset_over_action(check_result, short_transaction_amount, long_transaction_amount)
+                amount_check_message = self.__asset_over_action(check_result, short_order_amount, long_order_amount)
                 if check_result == amchkr.AmountChecker.CHECK_RESULT_MARGIN_TRADING_LIMIT_OVER or self.action_mode == self.ACTION_MODE_FORBIDDEN:
                     # 信用取引の限度を超えそうになった場合は何もしない
                     # print(amount_check_message)
                     return RETURN_FAIL, amount_check_message
 
             # ショート注文の実行
-            if short_transaction_number > 0: 
-                self.current_trading_info.short_trading.short_sell(short_transaction_number, stock_price)
+            if short_order_number > 0: 
+                self.current_trading_info.short_trading.short_sell(short_order_number, stock_price)
             else:
-                short_profit = self.current_trading_info.short_trading.short_cover(0 - short_transaction_number, stock_price)
+                short_profit = self.current_trading_info.short_trading.short_cover(0 - short_order_number, stock_price)
 
             # ロング注文の実行
-            if long_transaction_number > 0:
-                self.current_trading_info.long_trading.buy(long_transaction_number, stock_price)
+            if long_order_number > 0:
+                self.current_trading_info.long_trading.buy(long_order_number, stock_price)
             else:
-                long_profit = self.current_trading_info.long_trading.sell(0 - long_transaction_number, stock_price)
+                long_profit = self.current_trading_info.long_trading.sell(0 - long_order_number, stock_price)
 
             # 本取引の情報を最新取引情報として保存する
             self.current_trading_info.trading_date = trading_date
             self.current_trading_info.stock_price = stock_price
             self.current_trading_info.short_lot = short_lot
-            self.current_trading_info.short_transaction_number = short_transaction_number
+            self.current_trading_info.short_order_number = short_order_number
             self.current_trading_info.long_lot = long_lot
-            self.current_trading_info.long_transaction_number = long_transaction_number
+            self.current_trading_info.long_order_number = long_order_number
             self.current_trading_info.short_profit = short_profit
             self.current_trading_info.long_profit = long_profit
             self.current_trading_info.lot_volumn = lot_volumn
@@ -211,7 +211,7 @@ class Trading:
             # 利益を総資産に加算
             self.current_trading_info.assets = self.current_trading_info.assets + short_profit + long_profit
 
-            if short_transaction_number != 0 or long_transaction_number != 0:
+            if short_order_number != 0 or long_order_number != 0:
                 # この配下の処理は取引が発生している場合のみ行う
 
                 # トレードの状態を履歴として保存する(現在最新の取引を含め、最大31件)
@@ -291,7 +291,7 @@ class Trading:
                 + '  ¥' + f'{current_trading_info_tmp.assets:,.1f}')
             i = i + 1
 
-    def get_one_transaction_of_trading_history(self, number:int) -> cti.CurrentTradingInfoModel:
+    def get_one_order_of_trading_history(self, number:int) -> cti.CurrentTradingInfoModel:
         """
         指定した番号に該当した取引の情報を取得する。番号についてはshow_trading_history_in_stack()で確認できる。
         Args:
@@ -426,11 +426,11 @@ class Trading:
             self.current_trading_info.stock_code,
             self.current_trading_info.trading_date.strftime('%Y-%m-%d'),
             str(self.current_trading_info.stock_price),
-            str(self.current_trading_info.long_transaction_number),
+            str(self.current_trading_info.long_order_number),
             str(self.current_trading_info.long_trading.number_now),
             str(avg_long_price),
             str(self.current_trading_info.long_profit),
-            str(self.current_trading_info.short_transaction_number),
+            str(self.current_trading_info.short_order_number),
             str(self.current_trading_info.short_trading.number_now),
             str(avg_short_price),
             str(self.current_trading_info.short_profit),
@@ -472,7 +472,7 @@ class Trading:
     #     print('---------------------')
 
     # 総資産超過のチェックが通らない時のメッセージを生成する
-    def __asset_over_action(self, check_result:int, short_transaction_amount, long_transaction_amount):
+    def __asset_over_action(self, check_result:int, short_order_amount, long_order_amount):
 
         if check_result == amchkr.AmountChecker.CHECK_RESULT_OK:
             return None
@@ -481,8 +481,8 @@ class Trading:
         message_assets_info = '現在の総資産：' + f'{self.current_trading_info.assets:,.1f}' + os.linesep \
             + 'これまでの注文総額：　空売り：' + f'{self.current_trading_info.short_trading.total_amount_now:,.1f}' \
             + ', 買い：' + f'{self.current_trading_info.long_trading.total_amount_now:,.1f}' + os.linesep \
-            + '注文しようとする金額：　空売り：' + f'{short_transaction_amount:,.1f}' \
-            + ', 買い：' + f'{long_transaction_amount:,.1f}'
+            + '注文しようとする金額：　空売り：' + f'{short_order_amount:,.1f}' \
+            + ', 買い：' + f'{long_order_amount:,.1f}'
 
         if check_result == amchkr.AmountChecker.CHECK_RESULT_MARGIN_TRADING_LIMIT_OVER:
             message = '信用取引の限度(' + f'{self.current_trading_info.assets * 3.3:,.1f}' \

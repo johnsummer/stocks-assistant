@@ -10,12 +10,12 @@ class CurrentTradingInfoModel:
     stock_price:float               # 最新取引の株価(デフォルトは終値)
 
     short_lot:int                   # 空売りのロット数
-    short_transaction_number:int    # 最新取引における空売りの株数。マイナスの場合は買い戻しの株数
+    short_order_number:int    # 最新取引における空売りの株数。マイナスの場合は買い戻しの株数
     short_profit:float              # 最新取引におけるショートトレードの損益
     short_trading:st.ShortTrading   # ショートトレードのポジション情報（空売り中の総額、株数）
 
     long_lot:int                    # 買いのロット数
-    long_transaction_number:int     # 最新取引における買いの株数。マイナスの場合は売りの株数
+    long_order_number:int     # 最新取引における買いの株数。マイナスの場合は売りの株数
     long_profit:float               # 最新取引におけるロングトレードの損益
     long_trading:lt.LongTrading     # ロングトレードのポジション情報（保有株の総額、株数）
 

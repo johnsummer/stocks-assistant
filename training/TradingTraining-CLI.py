@@ -16,7 +16,7 @@ import ReopenTradingInfo as rti
 import data_analysis.OutputAnalysis as oa
 
 # 1取引を行った後のトレード詳細情報を表示する
-def display_transaction_detail(trading:tr.Trading, message:str):
+def display_order_detail(trading:tr.Trading, message:str):
 
     # 平均単価が0の場合は0で出力する
     avg_short_price = 0
@@ -394,7 +394,7 @@ if __name__ == "__main__":
                 
                 number = int(command_list[2])
 
-                trading_info = trading_close.get_one_transaction_of_trading_history(number)
+                trading_info = trading_close.get_one_order_of_trading_history(number)
                 if trading_info.stock_code != code:
                     print('異なる銘柄コードの取引履歴に戻すことができません。')
                     continue
@@ -582,17 +582,17 @@ if __name__ == "__main__":
             # print('long_lot:' + str(long_lot))
 
             print('■ 大引け注文：')
-            trading_close_message = trading_close.one_transaction(trading_date, short_lot, long_lot, lot_volumn, 
+            trading_close_message = trading_close.one_order(trading_date, short_lot, long_lot, lot_volumn, 
                 trading_close.ORDER_TIME_CLOSE)
 
             if trading_close_message[0] == 'failure':
                 print(trading_close_message[1])
                 print('Info:大引注文に失敗のため、他の注文を実行しませんでした。')
             else:
-                display_transaction_detail(trading_close, trading_close_message[1])
+                display_order_detail(trading_close, trading_close_message[1])
                 
                 print('■ 翌日寄付注文：')
-                trading_next_open_messege = trading_next_open.one_transaction(trading_date, short_lot, long_lot, lot_volumn, 
+                trading_next_open_messege = trading_next_open.one_order(trading_date, short_lot, long_lot, lot_volumn, 
                     trading_next_open.ORDER_TIME_NEXT_OPEN)
 
                 if trading_next_open_messege[0] == 'failure':
@@ -600,29 +600,29 @@ if __name__ == "__main__":
                     trading_close.reset_trading_info(1)
                     print('Info:翌日寄付注文に失敗のため、大引注文を1取引分巻き戻し、組合せ注文を実行しませんでした。')
                 else:
-                    display_transaction_detail(trading_next_open, trading_next_open_messege[1])
+                    display_order_detail(trading_next_open, trading_next_open_messege[1])
 
                     print('■ 組合せ注文：')
 
                     # 注文タイミングの設定
-                    transaction_time = trading_opcl.ORDER_TIME_NEXT_OPEN
+                    order_time = trading_opcl.ORDER_TIME_NEXT_OPEN
                     current_short_number = trading_opcl.current_trading_info.short_trading.number_now
                     current_long_number = trading_opcl.current_trading_info.long_trading.number_now
 
                     if short_lot == 0 and long_lot == 0:    # 玉持ちで全部手仕舞った場合
-                        transaction_time = trading_opcl.ORDER_TIME_CLOSE
+                        order_time = trading_opcl.ORDER_TIME_CLOSE
                     elif ( short_lot == long_lot ):  # スクエアにした場合
-                        transaction_time = trading_opcl.ORDER_TIME_NEXT_OPEN
+                        order_time = trading_opcl.ORDER_TIME_NEXT_OPEN
                     elif ( current_short_number != 0 and current_long_number != 0) \
                         and (short_lot == 0 or long_lot == 0 ):     # 売買の片方を全部手仕舞い、もう片方は維持する場合
                         short_number = short_lot * lot_volumn
                         long_number = long_lot * lot_volumn
                         if short_number == current_short_number or long_number == current_long_number:
-                            transaction_time = trading_opcl.ORDER_TIME_NEXT_OPEN
+                            order_time = trading_opcl.ORDER_TIME_NEXT_OPEN
 
                     # 上記以外の場合は初期値にする
-                    trading_opcl_messege = trading_opcl.one_transaction(trading_date, short_lot, long_lot, lot_volumn, 
-                        transaction_time)
+                    trading_opcl_messege = trading_opcl.one_order(trading_date, short_lot, long_lot, lot_volumn, 
+                        order_time)
 
                     if trading_opcl_messege[0] == 'failure':
                         print(trading_opcl_messege[1])
@@ -630,7 +630,7 @@ if __name__ == "__main__":
                         trading_next_open.reset_trading_info(1)
                         print('Info:組合せ文に失敗のため、他の注文を1取引分巻き戻しました。')
                     else:
-                        display_transaction_detail(trading_opcl, trading_opcl_messege[1])
+                        display_order_detail(trading_opcl, trading_opcl_messege[1])
 
         except Exception as e:
             print('入力不正')
