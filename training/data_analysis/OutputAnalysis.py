@@ -18,7 +18,7 @@ def aggregate_csv(csv_path:str, output_to_file:bool, line_number:int=-1) -> str:
     """
         指定されたトレード履歴のCSVファイルに対して所定の規則で集計する。
         Args:
-            order_mode (str): 集計対象のトレードの注文モード。close/open/opcl
+            csv_path (str): 集計対象のCSVファイル
             output_to_file (bool): 集計結果をCSVファイルに出力するか。Trueの場合は出力する。
             line_number (int): 戻り値の文字列に含まれるサマリーの件数。ファイル出力には影響しない。マイナスの整数を指定した場合(デフォルトでもある)は全件表示になる。
         Returns:
