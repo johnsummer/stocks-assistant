@@ -536,7 +536,7 @@ if __name__ == "__main__":
                 output_str = oa.aggregate_csv(csv_path, output_to_file, line_number)
                 print(output_str)
             else:
-                print('コマンドが不正です。')
+                print('コマンドは不正です。')
             
             continue
 
@@ -553,8 +553,8 @@ if __name__ == "__main__":
 
         # 入力チェック
         trading_operation = input_str.split()
-        if len(trading_operation) != 2:
-            print('取引情報が入力不正')
+        if len(trading_operation) < 2 or len(trading_operation) > 3:
+            print('取引情報の入力は不正です。')
             continue
 
         trading_date_str = trading_operation[0] if trading_date_year == None else trading_date_year + trading_operation[0]
@@ -562,13 +562,13 @@ if __name__ == "__main__":
 
         # 日付の入力チェック（桁数だけ）
         if not re.compile('[0-9]{8}').search(trading_date_str):
-            print('日付のフォーマットが不正')
+            print('日付のフォーマットは不正です。')
             continue
 
         # ロットの入力チェック
         stock_lots = stock_lots_str.split('-')
         if len(stock_lots) != 2:
-            print('ロット数が入力不正')
+            print('ロット数の入力は不正です。')
             continue
 
         try:
@@ -581,9 +581,23 @@ if __name__ == "__main__":
             # print('short_lot:' + str(short_lot))
             # print('long_lot:' + str(long_lot))
 
+            # 日付とロット以外の情報を入力された場合、株価の上書き処理を実施する
+            stock_price:dict = {'Close':-1, 'Open':-1}
+            if len(trading_operation) > 2:  
+                stock_price_str = trading_operation[2]
+                stock_price_arr = stock_price_str.split(':')
+                if len(stock_price_arr) == 2:
+                    if stock_price_arr[0].isdigit():
+                        stock_price['Close'] = float(stock_price_arr[0])
+                    if stock_price_arr[1].isdigit():
+                        stock_price['Open'] = float(stock_price_arr[1])
+                else:
+                    print('注文株価指定の入力は不正です。')
+                    continue
+
             print('■ 大引け注文：')
             trading_close_message = trading_close.one_order(trading_date, short_lot, long_lot, lot_volumn, 
-                trading_close.ORDER_TIME_CLOSE)
+                trading_close.ORDER_TIME_CLOSE, stock_price['Close'])
 
             if trading_close_message[0] == 'failure':
                 print(trading_close_message[1])
@@ -593,7 +607,7 @@ if __name__ == "__main__":
                 
                 print('■ 翌日寄付注文：')
                 trading_next_open_messege = trading_next_open.one_order(trading_date, short_lot, long_lot, lot_volumn, 
-                    trading_next_open.ORDER_TIME_NEXT_OPEN)
+                    trading_next_open.ORDER_TIME_NEXT_OPEN, stock_price['Open'])
 
                 if trading_next_open_messege[0] == 'failure':
                     print(trading_next_open_messege[1])
@@ -622,7 +636,7 @@ if __name__ == "__main__":
 
                     # 上記以外の場合は初期値にする
                     trading_opcl_messege = trading_opcl.one_order(trading_date, short_lot, long_lot, lot_volumn, 
-                        order_time)
+                        order_time, stock_price['Close'] if order_time == trading_opcl.ORDER_TIME_CLOSE else stock_price['Open'])
 
                     if trading_opcl_messege[0] == 'failure':
                         print(trading_opcl_messege[1])
@@ -632,8 +646,17 @@ if __name__ == "__main__":
                     else:
                         display_order_detail(trading_opcl, trading_opcl_messege[1])
 
+                        # すべての注文が終わった後に指定された株価でメモリに保存されている株データを上書きする
+                        # 株価指定が必要な場合はほとんどデータに誤りがあったため
+                        # 今後データ誤り以外、株価指定が必要な場面があったら、この部分の処理を修正する
+                        if stock_price['Close'] >= 0:
+                            stock_info.stock_data_df.loc[[trading_date.strftime('%Y-%m-%d')], ['Close']] = stock_price['Close']
+
+                        if stock_price['Open'] >= 0:
+                            stock_info.stock_data_df.loc[[trading_next_open.current_trading_info.trading_date.strftime('%Y-%m-%d')], ['Open']] = stock_price['Open']
+
         except Exception as e:
-            print('入力不正')
+            print('入力不正です。')
             print(traceback.format_exc())
 
         print()   
