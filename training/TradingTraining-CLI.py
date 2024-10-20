@@ -646,6 +646,15 @@ if __name__ == "__main__":
                     else:
                         display_order_detail(trading_opcl, trading_opcl_messege[1])
 
+                        # すべての注文が終わった後に指定された株価をメモリに保存されている株データに上書きする
+                        # 株価指定が必要な場合はほとんどデータに誤りがあったため
+                        # 今後データ誤り以外、株価指定が必要な場面があったら、この部分の処理を修正する
+                        if stock_price['Close'] >= 0:
+                            stock_info.stock_data_df.loc[[trading_date.strftime('%Y-%m-%d')], ['Close']] = stock_price['Close']
+
+                        if stock_price['Open'] >= 0:
+                            stock_info.stock_data_df.loc[[trading_next_open.current_trading_info.trading_date.strftime('%Y-%m-%d')], ['Open']] = stock_price['Open']
+
         except Exception as e:
             print('入力不正')
             print(traceback.format_exc())
