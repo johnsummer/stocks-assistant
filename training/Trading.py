@@ -113,7 +113,8 @@ class Trading:
         self.amount_checker = amchkr.AmountChecker()
         self.action_mode = self.ACTION_MODE_FORBIDDEN
 
-    def one_order(self, trading_date:date, short_lot:int, long_lot:int, lot_volumn:int=100, order_time:int=0) -> Tuple[str, str]:
+    def one_order(self, trading_date:date, short_lot:int, long_lot:int, lot_volumn:int=100, order_time:int=0, 
+                  stock_price:float=-1) -> Tuple[str, str]:
         """
         1回の取引を行う
         Args:
@@ -122,6 +123,7 @@ class Trading:
             long_lot (int): 取引後に持っている買いのロット数
             lot_volumn (int): 1注文単位のロット数
             order_time (int): 注文タイミング（大引け:0、翌日寄付:1）
+            stock_price (float): 注文株価
         Returns:
             Tuple[str, str]: 'success'/'failure', 付属のメッセージ
         """
@@ -130,7 +132,6 @@ class Trading:
         RETURN_SUCCESS = 'success'
 
         try:
-            stock_price = 0
             stock_data = None
             
             if order_time == self.ORDER_TIME_CLOSE:
@@ -139,7 +140,8 @@ class Trading:
                 if len(stock_data) == 0:
                     return RETURN_FAIL, "入力された日付のデータはない。その日は祝日か、取得期間外の日付かもしれない。"
                 
-                stock_price = float(stock_data['Close'])
+                if stock_price < 0:
+                    stock_price = float(stock_data['Close'])
             else:
                 # 翌日寄付での注文
                 trading_date = trading_date + timedelta(days=1)
@@ -156,7 +158,8 @@ class Trading:
                 if len(stock_data) == 0:
                     return RETURN_FAIL, "入力された日付の翌営業日のデータはない。取得期間外の日付かもしれない。"
                 
-                stock_price = float(stock_data['Open'])
+                if stock_price < 0:
+                    stock_price = float(stock_data['Open'])
             # print(stock_price)
 
             # ショート注文の準備
