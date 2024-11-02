@@ -1,4 +1,3 @@
-import csv
 from pathlib import Path
 import pandas as pd
 
@@ -47,6 +46,3 @@ class CSVLoader:
             else:
                 self.reopen_trading_items[file_name_objects[2] + file_name_objects[3] + file_name_objects[4]].add_file(file_name_objects[5], file)
                 self.reopen_trading_items[file_name_objects[2] + file_name_objects[3] + file_name_objects[4]].add_assets(file_name_objects[5], assets)
-
-
-        

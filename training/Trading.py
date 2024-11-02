@@ -8,7 +8,6 @@ import collections
 import copy
 import traceback
 import pandas as pd
-import yfinance as yf
 
 import CurrentTradingInfo as cti
 import AmountChecker as amchkr
@@ -80,16 +79,6 @@ class Trading:
         self.training_start_datetime = training_start_datetime
         self.trading_start_date = trading_start_date
 
-        # 使わなさそうで、一旦以下の処理をコメントアウトする
-        # 入力履歴を保存するcsvファイルを初期化する
-        # self.transactions_csv =  'output/transaction_history_' + self.stock_info.code + '_' + self.stock_info.start_date.strftime('%Y%m%d') \
-        #     + '_' + training_start_datetime + '_' + identifier + '.csv'
-        # if not os.path.isfile(self.transactions_csv):
-        #     with open(self.transactions_csv, 'w', newline='') as f:
-        #         header = ['trading_date', 'short_lot', 'long_lot']
-        #         writer = csv.writer(f)
-        #         writer.writerow(header)
-
         code_in_file = ''
         if self.trading_mode == self.TRADING_MODE_CHANGEABLE:
             code_in_file = self.TRADING_MODE_CHANGEABLE
@@ -102,7 +91,7 @@ class Trading:
             + '_' + training_start_datetime + '_' + identifier + '.csv')
         if not self.trading_history_csv.is_file():
             with self.trading_history_csv.open(mode='w', encoding='shift-jis', newline='') as f:
-                header = ['銘柄コード', '取引日付', '株価', '買い株数', '保有株数', '平均取得単価', 'ロング損益', '空売り株数', '空売り中の株数', '平均売り単価', 'ショート損益', '総資産', 'メモ']
+                header = ['銘柄コード', '取引日付', '株価', 'ロットサイズ', '売りロット数', '売り平均単価', '売り損益', '買いロット数', '買い平均単価', '買い損益', '総資産', 'メモ']
                 writer = csv.writer(f)
                 writer.writerow(header)
 
@@ -115,7 +104,7 @@ class Trading:
         self.amount_checker = amchkr.AmountChecker()
         self.action_mode = self.ACTION_MODE_FORBIDDEN
 
-    def one_order(self, trading_date:date, short_lot:int, long_lot:int, lot_volumn:int=100, order_time:int=0, 
+    def one_order(self, trading_date:date, short_lot:int, long_lot:int, lot_size:int=100, order_time:int=0, 
                   stock_price:float=-1) -> Tuple[str, str]:
         """
         1回の取引を行う
@@ -123,7 +112,7 @@ class Trading:
             trading_date (date): 取引の日付
             short_lot (int): 取引後に持っている空売りのロット数
             long_lot (int): 取引後に持っている買いのロット数
-            lot_volumn (int): 1注文単位のロット数
+            lot_size (int): ロットサイズ
             order_time (int): 注文タイミング（大引け:0、翌日寄付:1）
             stock_price (float): 注文株価
         Returns:
@@ -165,12 +154,12 @@ class Trading:
             # print(stock_price)
 
             # ショート注文の準備
-            short_lot_volumn = short_lot * lot_volumn
+            short_lot_volumn = short_lot * lot_size
             short_order_number = short_lot_volumn - self.current_trading_info.short_trading.number_now
             short_profit = 0
 
             # ロング注文の準備
-            long_lot_volumn = long_lot * lot_volumn
+            long_lot_volumn = long_lot * lot_size
             long_order_number = long_lot_volumn - self.current_trading_info.long_trading.number_now
             long_profit = 0
 
@@ -210,7 +199,7 @@ class Trading:
             self.current_trading_info.long_order_number = long_order_number
             self.current_trading_info.short_profit = short_profit
             self.current_trading_info.long_profit = long_profit
-            self.current_trading_info.lot_volumn = lot_volumn
+            self.current_trading_info.lot_size = lot_size
             self.current_trading_info.stock_code = self.stock_info.code
 
             # 利益を総資産に加算
@@ -292,7 +281,7 @@ class Trading:
             print(str(i) + ' : ' + current_trading_info_tmp.stock_code 
                 + '  ' + current_trading_info_tmp.trading_date.strftime('%Y-%m-%d') 
                 + '  ' + str(current_trading_info_tmp.short_lot) + '-' + str(current_trading_info_tmp.long_lot) 
-                + '  (size: ' +  str(current_trading_info_tmp.lot_volumn) + ')'
+                + '  (size: ' +  str(current_trading_info_tmp.lot_size) + ')'
                 + '  ¥' + f'{current_trading_info_tmp.assets:,.1f}')
             i = i + 1
 
@@ -431,50 +420,19 @@ class Trading:
             self.current_trading_info.stock_code,
             self.current_trading_info.trading_date.strftime('%Y-%m-%d'),
             str(self.current_trading_info.stock_price),
-            str(self.current_trading_info.long_order_number),
-            str(self.current_trading_info.long_trading.number_now),
-            str(avg_long_price),
-            str(self.current_trading_info.long_profit),
-            str(self.current_trading_info.short_order_number),
-            str(self.current_trading_info.short_trading.number_now),
+            str(self.current_trading_info.lot_size),
+            str(self.current_trading_info.short_lot),
             str(avg_short_price),
             str(self.current_trading_info.short_profit),
+            str(self.current_trading_info.long_lot),
+            str(avg_long_price),
+            str(self.current_trading_info.long_profit),
             str(self.current_trading_info.assets)
         ]
 
         with self.trading_history_csv.open('a', encoding='shift-jis', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(trading_info)
-
-    # TO DELETE
-    # # 1取引を行った後のトレード詳細情報を表示する
-    # def __display_transaction_detail(self, amount_check_message:str):
-
-    #     # 平均単価が0の場合は0で出力する
-    #     avg_short_price = 0
-    #     if self.current_trading_info.short_trading.number_now != 0:
-    #         avg_short_price = self.current_trading_info.short_trading.total_amount_now / self.current_trading_info.short_trading.number_now
-    #     avg_long_price = 0
-    #     if self.current_trading_info.long_trading.number_now != 0:
-    #         avg_long_price = self.current_trading_info.long_trading.total_amount_now / self.current_trading_info.long_trading.number_now
-
-    #     print('取引日付：' + self.current_trading_info.trading_date.strftime('%Y-%m-%d'))
-    #     print('株価(終値)：' + f'{self.current_trading_info.stock_price:,.1f}')
-    #     print('---------------------')
-    #     print('売り注文株数：' + str(self.current_trading_info.short_transaction_number)
-    #         + '\t\t売り総株数：' + str(self.current_trading_info.short_trading.number_now))
-    #     print('平均売り単価：' + f'{avg_short_price:,.1f}'
-    #         + '\t\t売り総額：' + f'{self.current_trading_info.short_trading.total_amount_now:,.1f}')
-    #     print('損益(ショート)：' + f'{self.current_trading_info.short_profit:,.1f}')
-    #     print('---------------------')
-    #     print('買い注文株数：' + str(self.current_trading_info.long_transaction_number)
-    #         + '\t\t保有株数：' + str(self.current_trading_info.long_trading.number_now))
-    #     print('平均取得単価：' + f'{avg_long_price:,.1f}'
-    #         + '\t\t保有総額：' + f'{self.current_trading_info.long_trading.total_amount_now:,.1f}')
-    #     print('損益(ロング)：' + f'{self.current_trading_info.long_profit:,.1f}')
-    #     print('---------------------')
-    #     print('総資産：' + f'{self.current_trading_info.assets:,.1f}' + '\t' + amount_check_message)
-    #     print('---------------------')
 
     # 総資産超過のチェックが通らない時のメッセージを生成する
     def __asset_over_action(self, check_result:int, short_order_amount, long_order_amount):
