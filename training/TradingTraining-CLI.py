@@ -3,6 +3,8 @@ import datetime as dt
 import sys
 import re
 import traceback
+import os
+from pathlib import Path
 
 from pandas import DataFrame
 
@@ -178,6 +180,8 @@ if __name__ == "__main__":
                     if valid_input:
                         output_str = oa.aggregate_csv(csv_path, output_to_file)
                         print(output_str)
+                        if output_to_file:
+                            os.startfile(str(csv_path).replace('_history_', '_summary_'))
                     else:
                         print('コマンドが不正です。')
 
@@ -501,7 +505,7 @@ if __name__ == "__main__":
 
         # 現在実施中のトレードに対して、ここまでのサマリーを確認・ファイルに出力する
         elif input_str.startswith('summary'):
-            csv_path = ''
+            csv_path:Path = None
             output_to_file = False
             line_number = 10
             valid_input = True
@@ -535,6 +539,8 @@ if __name__ == "__main__":
             if valid_input:
                 output_str = oa.aggregate_csv(csv_path, output_to_file, line_number)
                 print(output_str)
+                if output_to_file:
+                    os.startfile(str(csv_path).replace('_history_', '_summary_'))
             else:
                 print('コマンドは不正です。')
             
