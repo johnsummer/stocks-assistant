@@ -537,7 +537,7 @@ if __name__ == "__main__":
                 valid_input = False
 
             if valid_input:
-                output_str = oa.aggregate_csv(str(csv_path), output_to_file, line_number)
+                output_str = oa.aggregate_csv(csv_path, output_to_file, line_number)
                 print(output_str)
                 if output_to_file:
                     os.startfile(str(csv_path).replace('_history_', '_summary_'))
