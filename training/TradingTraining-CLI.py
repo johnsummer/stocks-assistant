@@ -3,6 +3,7 @@ import datetime as dt
 import sys
 import re
 import traceback
+import os
 
 from pandas import DataFrame
 
@@ -178,6 +179,8 @@ if __name__ == "__main__":
                     if valid_input:
                         output_str = oa.aggregate_csv(csv_path, output_to_file)
                         print(output_str)
+                        if output_to_file:
+                            os.startfile(str(csv_path).replace('_history_', '_summary_'))
                     else:
                         print('コマンドが不正です。')
 
@@ -535,6 +538,8 @@ if __name__ == "__main__":
             if valid_input:
                 output_str = oa.aggregate_csv(csv_path, output_to_file, line_number)
                 print(output_str)
+                if output_to_file:
+                    os.startfile(str(csv_path).replace('_history_', '_summary_'))
             else:
                 print('コマンドは不正です。')
             
