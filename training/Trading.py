@@ -28,7 +28,7 @@ class Trading:
     stock_info:si.StockInfo
 
     # transactions_csv = None
-    trading_history_csv = None
+    trading_history_csv:Path = None
 
     # 最新取引の情報
     current_trading_info:cti.CurrentTradingInfoModel
@@ -98,10 +98,10 @@ class Trading:
 
         # トレード履歴を保存するcsvファイルを初期化する
         dir_path = Path('output')
-        self.trading_history_csv =  str(dir_path.joinpath('trading_history_' + code_in_file + '_' + self.trading_start_date \
-            + '_' + training_start_datetime + '_' + identifier + '.csv'))
-        if not os.path.isfile(self.trading_history_csv):
-            with open(self.trading_history_csv, 'w', newline='') as f:
+        self.trading_history_csv =  dir_path.joinpath('trading_history_' + code_in_file + '_' + self.trading_start_date \
+            + '_' + training_start_datetime + '_' + identifier + '.csv')
+        if not self.trading_history_csv.is_file():
+            with self.trading_history_csv.open(mode='w', encoding='shift-jis', newline='') as f:
                 header = ['銘柄コード', '取引日付', '株価', '買い株数', '保有株数', '平均取得単価', 'ロング損益', '空売り株数', '空売り中の株数', '平均売り単価', 'ショート損益', '総資産', 'メモ']
                 writer = csv.writer(f)
                 writer.writerow(header)
@@ -442,7 +442,7 @@ class Trading:
             str(self.current_trading_info.assets)
         ]
 
-        with open(self.trading_history_csv, 'a', newline='') as f:
+        with self.trading_history_csv.open('a', encoding='shift-jis', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(trading_info)
 

@@ -1,7 +1,6 @@
-# pandasをインポートする
 import pandas as pd
-# mathをインポートする
 import math
+from pathlib import Path
 
 # ロットサイズを計算する関数を定義する
 def __calc_lot_size(x):
@@ -14,18 +13,18 @@ def __calc_lot_size(x):
     # 最大公約数を返す
     return gcd
 
-def aggregate_csv(csv_path:str, output_to_file:bool, line_number:int=-1) -> str:
+def aggregate_csv(csv_path:Path, output_to_file:bool, line_number:int=-1) -> str:
     """
         指定されたトレード履歴のCSVファイルに対して所定の規則で集計する。
         Args:
-            csv_path (str): 集計対象のCSVファイル
+            csv_path (Path): 集計対象のCSVファイル
             output_to_file (bool): 集計結果をCSVファイルに出力するか。Trueの場合は出力する。
             line_number (int): 戻り値の文字列に含まれるサマリーの件数。ファイル出力には影響しない。マイナスの整数を指定した場合(デフォルトでもある)は全件表示になる。
         Returns:
             画面表示用の文字列（エラーメッセージの場合がある）
         """
     
-    if csv_path == '':
+    if csv_path == None:
         return '対象ファイルを設定されていません。'
 
     # csvファイルを読み込む
