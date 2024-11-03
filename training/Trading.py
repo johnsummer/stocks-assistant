@@ -14,16 +14,8 @@ import AmountChecker as amchkr
 import StockInfo as si
 
 class Trading:
-
-    # TO DELETE
-    # # 株価格のデータ
-    # stock_data_df:pd.DataFrame = None
-
-    # # 株銘柄の情報
-    # stock_info = None
-    # code:str
-    # start_date:date
-    # end_date:date
+    
+    # 株銘柄の情報
     stock_info:si.StockInfo
 
     # transactions_csv = None
@@ -261,11 +253,6 @@ class Trading:
         df_trading_history_csv = df_trading_history_csv[:-number]
         df_trading_history_csv.to_csv(self.trading_history_csv, index=False, encoding="shift-jis")
 
-        # 使わなさそうで一旦コメントアウトする
-        # df_transactions_csv = pd.read_csv(self.transactions_csv, encoding="shift-jis")
-        # df_transactions_csv = df_transactions_csv[:-number]
-        # df_transactions_csv.to_csv(self.transactions_csv, index=False, encoding="shift-jis")
-
     def show_trading_history_in_stack(self):
         """
         戻す可能な取引の一覧を表示する。
@@ -390,20 +377,6 @@ class Trading:
             print("注意：株価が高すぎて既定の規則で計算したロットのサイズは100株未満になってしまいましたので、一旦100株にしました。")
         
         return lot_size
-
-    # 使わなさそうで一旦コメントアウトする
-    # 取引の入力情報をcsvファイルに書き出す
-    # def __output_transaction_input_to_csv(self):
-
-    #     transaction = [
-    #         self.current_trading_info.trading_date.strftime('%Y-%m-%d'), 
-    #         str(self.current_trading_info.short_lot), 
-    #         str(self.current_trading_info.long_lot)
-    #     ]
-
-    #     with open(self.transactions_csv, 'a', newline='') as f:
-    #         writer = csv.writer(f)
-    #         writer.writerow(transaction)
 
     # トレード履歴をcsvファイルに書き出す
     def __output_trading_info_to_csv(self):
