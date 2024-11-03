@@ -99,7 +99,7 @@ if __name__ == "__main__":
     # 各引数のデフォルト値を定義する
     start_date_str = '20130101' if args.s == None else args.s
     end_date = dt.datetime.now().date() if args.e == None else dt.datetime.strptime(args.e, '%Y%m%d').date()
-    lot_volumn = 100 if args.l == None else int(args.l)
+    lot_size = 100 if args.l == None else int(args.l)
 
     assets_close = 10000000
     assets_open = assets_close
@@ -236,7 +236,7 @@ if __name__ == "__main__":
         print('code=' + code)
         print('start_date=' + str(start_date))
         print('end_date=' + str(end_date))
-        print('lot=' + str(lot_volumn))
+        print('lot=' + str(lot_size))
         print('assets=￥' + f'{assets_close:,.1f}' + ' - ￥' + f'{assets_open:,.1f}' + ' - ￥' + f'{assets_opcl:,.1f}')
         print()
 
@@ -294,8 +294,8 @@ if __name__ == "__main__":
             lot_setting_input = input_str.split('=')
             if len(lot_setting_input) == 2:
                 try:
-                    lot_volumn = int(lot_setting_input[1])
-                    print('ロットサイズ：' + str(lot_volumn))
+                    lot_size = int(lot_setting_input[1])
+                    print('ロットサイズ：' + str(lot_size))
                 except Exception as e:
                     print('ロットサイズの指定値が不正。整数で入力してください。')
                     print(traceback.format_exc())
@@ -335,7 +335,7 @@ if __name__ == "__main__":
 
                     # トレードパラメータの表示、兼入力引数に関する動作確認
                     print('code=' + code)
-                    print('lot=' + str(lot_volumn))
+                    print('lot=' + str(lot_size))
                     print('assets=￥' + f'{trading_close.current_trading_info.assets:,.1f}' 
                           + ' - ￥' + f'{trading_next_open.current_trading_info.assets:,.1f}'
                           + ' - ￥' + f'{trading_opcl.current_trading_info.assets:,.1f}')
@@ -408,7 +408,7 @@ if __name__ == "__main__":
                 trading_opcl.reset_trading_info(number)
 
                 # 当該取引の時のロットサイズを現在のロットサイズにセットする
-                lot_volumn = trading_close.current_trading_info.lot_volumn
+                lot_size = trading_close.current_trading_info.lot_size
 
                 continue
             else:
@@ -488,12 +488,12 @@ if __name__ == "__main__":
                                  trading_opcl.current_trading_info.assets)
                     lot_number = 20 if len(lot_resizing_input) == 2 else int(lot_resizing_input[2])
 
-                    lot_volumn = tr.Trading.calculate_lot_size(assets, lot_number, stock_price)
-                    if lot_volumn <= 0:
+                    lot_size = tr.Trading.calculate_lot_size(assets, lot_number, stock_price)
+                    if lot_size <= 0:
                         print('ロットサイズの再計算で問題が発生しました。必要な場合は「l=ロットサイズ」で指定してください。')
                         continue
 
-                    print('下記の条件でロットサイズを再計算しました。ロットサイズ：' + str(lot_volumn))
+                    print('下記の条件でロットサイズを再計算しました。ロットサイズ：' + str(lot_size))
                     print('導入資産：' + f'{assets:,.1f}' + ', 想定総玉数：' + str(lot_number) + ', 株価：' + f'{stock_price:,.1f}')
                 except Exception as e:
                     print('ロットサイズの再計算で問題が発生しました。')
@@ -602,7 +602,7 @@ if __name__ == "__main__":
                     continue
 
             print('■ 大引け注文：')
-            trading_close_message = trading_close.one_order(trading_date, short_lot, long_lot, lot_volumn, 
+            trading_close_message = trading_close.one_order(trading_date, short_lot, long_lot, lot_size, 
                 trading_close.ORDER_TIME_CLOSE, stock_price['Close'])
 
             if trading_close_message[0] == 'failure':
@@ -612,7 +612,7 @@ if __name__ == "__main__":
                 display_order_detail(trading_close, trading_close_message[1])
                 
                 print('■ 翌日寄付注文：')
-                trading_next_open_messege = trading_next_open.one_order(trading_date, short_lot, long_lot, lot_volumn, 
+                trading_next_open_messege = trading_next_open.one_order(trading_date, short_lot, long_lot, lot_size, 
                     trading_next_open.ORDER_TIME_NEXT_OPEN, stock_price['Open'])
 
                 if trading_next_open_messege[0] == 'failure':
@@ -635,13 +635,13 @@ if __name__ == "__main__":
                         order_time = trading_opcl.ORDER_TIME_NEXT_OPEN
                     elif ( current_short_number != 0 and current_long_number != 0) \
                         and (short_lot == 0 or long_lot == 0 ):     # 売買の片方を全部手仕舞い、もう片方は維持する場合
-                        short_number = short_lot * lot_volumn
-                        long_number = long_lot * lot_volumn
+                        short_number = short_lot * lot_size
+                        long_number = long_lot * lot_size
                         if short_number == current_short_number or long_number == current_long_number:
                             order_time = trading_opcl.ORDER_TIME_NEXT_OPEN
 
                     # 上記以外の場合は初期値にする
-                    trading_opcl_messege = trading_opcl.one_order(trading_date, short_lot, long_lot, lot_volumn, 
+                    trading_opcl_messege = trading_opcl.one_order(trading_date, short_lot, long_lot, lot_size, 
                         order_time, stock_price['Close'] if order_time == trading_opcl.ORDER_TIME_CLOSE else stock_price['Open'])
 
                     if trading_opcl_messege[0] == 'failure':
