@@ -2,17 +2,6 @@ import pandas as pd
 import math
 from pathlib import Path
 
-# ロットサイズを計算する関数を定義する
-def __calc_lot_size(x):
-    # 買いロット数と売りロット数を結合する
-    nums = x["買いロット数リスト"] + x["売りロット数リスト"]
-    # 0を除く
-    nums = [n for n in nums if n != 0]
-    # 最大公約数を求める
-    gcd = math.gcd(*nums)
-    # 最大公約数を返す
-    return gcd
-
 def aggregate_csv(csv_path:Path, output_to_file:bool, line_number:int=-1) -> str:
     """
         指定されたトレード履歴のCSVファイルに対して所定の規則で集計する。
