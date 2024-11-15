@@ -1,0 +1,34 @@
+//@version=5
+indicator("Display Orders in Trading", shorttitle="Display Orders", overlay=true)
+
+// カンマ区切りの文字列をハードコーディング
+dateInput = <日付の文字列、コンマで区切る>            //"2024-10-17,2024-10-24,2024-11-01,2024-11-06"
+textInput = <建玉操作の文字列、コンマで区切る>        //"1-0,2-0,0-0,1-2"
+
+// 日付と表示テキストの配列を初期化
+dates = str.split(dateInput, ",")
+texts = str.split(textInput, ",")
+
+// オフセットの設定
+offset = 20  // ピクセル
+
+// 日付をチェックしてラベルを表示
+for i = 0 to array.size(dates) - 1
+    singleDateStr = array.get(dates, i)
+    parts = str.split(singleDateStr, "-")
+    targetYear = int(str.tonumber(array.get(parts, 0)))
+    targetMonth = int(str.tonumber(array.get(parts, 1)))
+    targetDay = int(str.tonumber(array.get(parts, 2)))
+    
+    isTargetDate = (year == targetYear and month == targetMonth and dayofmonth == targetDay)
+    
+    if (isTargetDate)        
+        labelColor = color.orange // デフォルトのラベル色をオレンジに設定
+        if (i == 0)
+            labelColor := color.red // 最初のラベルの背景色を赤にする
+        else if (array.get(texts, i) == "0-0")
+            labelColor := color.blue // 文字列が「0-0」の場合、背景色を青にする
+        else if (i > 0 and array.get(texts, i - 1) == "0-0")
+            labelColor := color.red // 文字列が「0-0」のラベルの次のラベルの背景色を赤にする
+        
+        label.new(bar_index, high + offset * syminfo.mintick, array.get(texts, i), color=labelColor, style=label.style_label_down, textcolor=color.white, size=size.small)
