@@ -1,5 +1,6 @@
 from training import LongTrading
 from training import ShortTrading
+from training.integration import OrdersToTradingView
 
 def long_trading_test():
 
@@ -124,6 +125,16 @@ def short_trading_test():
     print("number: " + str(st.number_now))
     print("profit: " + str(result[2]))
 
+def test_order_to_trv():
+    file_name = 'output\\trading_history_changeable_20130101_20241102231112_close.csv'
+    銘柄コード = '2267.T'  # 例：'1234'
+    開始日 = '20240101'
+    終了日 = '20241231'
+    日付の文字列, 建玉操作の文字列 = OrdersToTradingView.extract_trading_history(file_name, 銘柄コード, 開始日, 終了日)
+    print(f'日付の文字列: "{日付の文字列}"')
+    print(f'建玉操作の文字列: "{建玉操作の文字列}"')
+
 if __name__ == "__main__":
-    long_trading_test()
-    short_trading_test()
+    # long_trading_test()
+    # short_trading_test()
+    test_order_to_trv()

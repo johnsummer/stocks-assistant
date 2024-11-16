@@ -16,6 +16,7 @@ import StockInfo as si
 import CSVLoader as cl
 import ReopenTradingInfo as rti
 import data_analysis.OutputAnalysis as oa
+import integration.OrdersToTradingView as ottv
 
 # 1取引を行った後のトレード詳細情報を表示する
 def display_order_detail(trading:tr.Trading, message:str):
@@ -471,7 +472,7 @@ if __name__ == "__main__":
 
                     # 日付の入力チェック（桁数だけ）
                     if not re.compile('[0-9]{8}').search(base_date_str):
-                        print('日付のフォーマットが不正')
+                        print('日付のフォーマットが不正です。')
                         continue
 
                     base_date:dt.date
@@ -479,7 +480,7 @@ if __name__ == "__main__":
 
                     stock_data = stock_info.stock_data_df[stock_info.stock_data_df.index == base_date.strftime('%Y-%m-%d')]
                     if len(stock_data) == 0:
-                        print('入力された日付のデータはない。その日は祝日か、取得期間外の日付かもしれない。')
+                        print('入力された日付のデータはありません。その日は祝日か、取得期間外の日付かもしれません。')
                         continue
 
                     stock_price = float(stock_data['Close']) # 計算基準日の終値で計算する（ロット再計算しようと思う時、翌日の始値がわからないので）
@@ -499,7 +500,7 @@ if __name__ == "__main__":
                     print('ロットサイズの再計算で問題が発生しました。')
                     print(traceback.format_exc())
             else:
-                print('コマンド不正')
+                print('コマンド不正です。')
 
             continue
 
@@ -544,6 +545,40 @@ if __name__ == "__main__":
             else:
                 print('コマンドは不正です。')
             
+            continue
+        
+        # 取引履歴をTradingViewのチャート上の表示用の文字列に出力するコマンド
+        elif input_str.startswith('to_trv '):
+            code_for_trv = ''
+            start_date_for_trv = ''
+            end_date_for_trv = ''
+            input_commands = input_str.split(' ')
+            if len(input_commands) == 3:
+                # 銘柄コードが指定されているかをチェックする
+                if code is None or code == '' or stock_info is None:
+                    print('トレード銘柄は指定されていませんので、履歴文字列を出力するには銘柄コードの指定が必要です。')
+                    continue
+                code_for_trv = code
+                start_date_for_trv = input_commands[1]
+                end_date_for_trv = input_commands[2]
+            elif len(input_commands) == 4:
+                code_for_trv = input_commands[1]
+                start_date_for_trv = input_commands[2]
+                end_date_for_trv = input_commands[3]
+            else:
+                print('コマンドは不正です。')
+                continue
+
+            # 日付の入力チェック（桁数だけ）
+            if not re.compile('[0-9]{8}').search(start_date_for_trv) \
+                or not re.compile('[0-9]{8}').search(end_date_for_trv):
+                print('日付のフォーマットが不正です。yyyymmdd形式で入力してください。')
+                continue
+
+            date_str, orders_str = ottv.extract_trading_history(trading_close.trading_history_csv, code_for_trv,
+                                                                 start_date_for_trv, end_date_for_trv)
+            print(date_str)
+            print(orders_str)
             continue
 
         # アプリを終了させるコマンド
