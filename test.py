@@ -130,8 +130,7 @@ def test_order_to_trv():
     銘柄コード = '2267.T'  # 例：'1234'
     開始日 = '20240101'
     終了日 = '20241231'
-    日付の文字列, 建玉操作の文字列 = OrdersToTradingView.extract_trading_history(file_name, 銘柄コード, 開始日, 終了日)
-    print(f'日付の文字列: "{日付の文字列}"')
+    建玉操作の文字列 = OrdersToTradingView.extract_trading_history(file_name, 銘柄コード, 開始日, 終了日)
     print(f'建玉操作の文字列: "{建玉操作の文字列}"')
 
 if __name__ == "__main__":
