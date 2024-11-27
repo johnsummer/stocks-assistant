@@ -575,9 +575,8 @@ if __name__ == "__main__":
                 print('日付のフォーマットが不正です。yyyymmdd形式で入力してください。')
                 continue
 
-            date_str, orders_str = ottv.extract_trading_history(trading_close.trading_history_csv, code_for_trv,
+            orders_str = ottv.extract_trading_history(trading_close.trading_history_csv, code_for_trv,
                                                                  start_date_for_trv, end_date_for_trv)
-            print(date_str)
             print(orders_str)
             continue
 

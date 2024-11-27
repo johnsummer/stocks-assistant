@@ -1,8 +1,9 @@
 import pandas as pd
 
-def extract_trading_history(file_name:str, stock_code:str, start_date:str, end_date:str):
+def extract_trading_history(file_name: str, stock_code: str, start_date: str, end_date: str) -> str:
     """
-    CSVファイルから指定した銘柄コードおよび期間の取引日付と建玉操作の情報を抽出します。
+    CSVファイルから指定した銘柄コードおよび期間の取引日付、売りロット数、買いロット数を抽出し、
+    取引日付:売りロット数-買いロット数という形式の文字列を生成します。
 
     Args:
         file_name (str): トレード履歴データを含むCSVファイルの名前。
@@ -11,9 +12,7 @@ def extract_trading_history(file_name:str, stock_code:str, start_date:str, end_d
         end_date (str): 期間の終了日（YYYYMMDD形式）。
         
     Returns:
-        tuple: 2つの文字列を含むタプル：
-            - dates_str (str): 取引日付をカンマで区切った文字列。データがない場合は"データがありません"というメッセージ。
-            - lot_nummers_str (str): 売りロット数と買いロット数をハイフンで区切り、さらにカンマで区切った文字列。データがない場合は"データがありません"というメッセージ。
+        str: 取引日付:売りロット数-買いロット数形式の文字列。データがない場合は"該当するデータがありません"というメッセージ。
     """
     try:
         # CSVファイルを読み込む（Shift-JISエンコーディングを使用）
@@ -33,19 +32,15 @@ def extract_trading_history(file_name:str, stock_code:str, start_date:str, end_d
 
         # データが存在しない場合の処理
         if filtered_df.empty:
-            return "該当するデータがありません", "該当するデータがありません"
+            return "該当するデータがありません"
 
         # 必要な列（取引日付、売りロット数、買いロット数）を抽出
-        dates = filtered_df['取引日付'].dt.strftime('%Y-%m-%d').tolist()
-        sell_lots = filtered_df['売りロット数'].tolist()
-        buy_lots = filtered_df['買いロット数'].tolist()
+        filtered_df = filtered_df[['取引日付', '売りロット数', '買いロット数']]
 
-        # 日付の文字列を生成
-        dates_str = ','.join(dates)
+        # 取引日付、売りロット数、買いロット数を順番に抽出し、文字列を生成
+        result_str = ','.join([f"{row['取引日付'].strftime('%Y-%m-%d')}:{row['売りロット数']}-{row['買いロット数']}" 
+                               for index, row in filtered_df.iterrows()])
 
-        # ロット数の文字列を生成
-        lot_nummers_str = ','.join([f"{sell}-{buy}" for sell, buy in zip(sell_lots, buy_lots)])
-
-        return dates_str, lot_nummers_str
+        return result_str
     except Exception as e:
-        return str(e), str(e)
+        return str(e)
