@@ -1,17 +1,18 @@
 import csv
 from datetime import timedelta
 from datetime import date
+from datetime import datetime
 from typing import Tuple
 from pathlib import Path
 import os
-import collections
-import copy
 import traceback
 import pandas as pd
 
 import CurrentTradingInfo as cti
 import AmountChecker as amchkr
 import StockInfo as si
+import ShortTrading as st
+import LongTrading as lt
 
 class Trading:
     
@@ -24,11 +25,12 @@ class Trading:
     # 最新取引の情報
     current_trading_info:cti.CurrentTradingInfoModel
 
+    # TO DELETE
     # 直近のトレード履歴(最新30件)を保存するリスト。誤入力の際にトレードの状態を戻すために使う
-    __trading_info_history:collections.deque
+    # __trading_info_history:collections.deque
 
-    # トレード履歴の一時保存の最大件数(現在最新の状態＋30件前まで)
-    __MAX_LENGTH_OF_HISTORY = 31
+    # トレード履歴表示の最大件数
+    __MAX_LENGTH_OF_HISTORY = 20
 
     # 総資産超過チェックを通らないときの処理モード
     action_mode:int
@@ -55,13 +57,19 @@ class Trading:
     # 今回の練習対象となるトレードの開始日
     trading_start_date:str
 
+    # 最小取引単位
+    min_trading_unit:int = 100
+
     def __init__(self, stock_info:si.StockInfo, training_start_datetime:str, assets:float=0.0, identifier:str='', trading_start_date:str='20130101', trading_mode:str='single') -> None:
         """
         トレードを開始する
         Args:
             stock_info (StockInfo): トレード対象銘柄の情報
-            assets (float): トレード開始時の資産額
-            identifier (str): 同銘柄、同期間のトレードを行った際に、csvファイルに対して区別を付けたい時の識別子
+            training_start_datetime (str): 練習を始めた日時
+            assets (float, optional): トレード開始時の資産額. Defaults to 0.0.
+            identifier (str, optional): 同銘柄、同期間のトレードを行った際に、csvファイルに対して区別を付けたい時の識別子. Defaults to ''.
+            trading_start_date (str, optional): 今回の練習期間の開始日. Defaults to '20130101'.
+            trading_mode (str, optional): トレードモード. Defaults to 'single'.
         Returns:
             None
         """
@@ -88,7 +96,8 @@ class Trading:
                 writer.writerow(header)
 
         self.current_trading_info = cti.CurrentTradingInfoModel()
-        self.__trading_info_history = collections.deque()
+        # TO DELETE
+        # self.__trading_info_history = collections.deque()
 
         self.current_trading_info.assets = assets
 
@@ -186,9 +195,9 @@ class Trading:
             self.current_trading_info.trading_date = trading_date
             self.current_trading_info.stock_price = stock_price
             self.current_trading_info.short_lot = short_lot
-            self.current_trading_info.short_order_number = short_order_number
+            # self.current_trading_info.short_order_number = short_order_number # TO DELETE
             self.current_trading_info.long_lot = long_lot
-            self.current_trading_info.long_order_number = long_order_number
+            # self.current_trading_info.long_order_number = long_order_number # TO DELETE
             self.current_trading_info.short_profit = short_profit
             self.current_trading_info.long_profit = long_profit
             self.current_trading_info.lot_size = lot_size
@@ -200,12 +209,13 @@ class Trading:
             if short_order_number != 0 or long_order_number != 0:
                 # この配下の処理は取引が発生している場合のみ行う
 
+                # TO DELETE
                 # トレードの状態を履歴として保存する(現在最新の取引を含め、最大31件)
-                if len(self.__trading_info_history) == self.__MAX_LENGTH_OF_HISTORY:
-                    self.__trading_info_history.popleft()
+                # if len(self.__trading_info_history) == self.__MAX_LENGTH_OF_HISTORY:
+                #     self.__trading_info_history.popleft()
 
-                current_trading_info_tmp = copy.deepcopy(self.current_trading_info)
-                self.__trading_info_history.append(current_trading_info_tmp)
+                # current_trading_info_tmp = copy.deepcopy(self.current_trading_info)
+                # self.__trading_info_history.append(current_trading_info_tmp)
 
                 # # トレードの状態を履歴として保存する処理の動作確認
                 # for current_trading_info_tmp in self.__trading_info_history:
@@ -223,37 +233,47 @@ class Trading:
         except Exception as e:
             print(traceback.format_exc())
 
-    def reset_trading_info(self, number:int):
+    def reset_trading_info(self, number: int) -> None:
         """
-        指定した番号に該当したトレードの状態に戻す。番号についてはshow_trading_history_in_stack()で確認できる。
+        トレードの状態をリセットする
         Args:
-            number (int): 戻したい取引の個数（例：2を指定した場合は2個前の取引の状態にトレードをリセットする）
+            number (int): リセットする取引の個数
         Returns:
             None
         """
-        max = self.__MAX_LENGTH_OF_HISTORY if self.__MAX_LENGTH_OF_HISTORY < len(self.__trading_info_history) else len(self.__trading_info_history)
-        max = max - 1   # 現在の最新状態を除いた後の最大の件数（戻す先の対象となる件数）
+        try:
+            df = pd.read_csv(self.trading_history_csv, encoding="shift-jis")
+            if df.empty or number >= len(df):
+                print("指定された番号の取引履歴が存在しません。")
+                return
+    
+            # 最新の取引情報を取得する
+            row = df.iloc[number]
+            self.current_trading_info = cti.CurrentTradingInfoModel()
+            self.current_trading_info.trading_date = datetime.strptime(row['取引日付'], '%Y-%m-%d').date()
+            self.current_trading_info.stock_price = float(row['株価'])
+            self.current_trading_info.short_lot = int(row['売りロット数'])
+            self.current_trading_info.short_profit = float(row['売り損益'])
+            self.current_trading_info.short_trading = st.ShortTrading()
+            self.current_trading_info.short_trading.total_amount_now = float(row['売り平均単価']) * int(row['売りロット数'])
+            self.current_trading_info.short_trading.number_now = int(row['売りロット数']) * int(row['ロットサイズ'])
+            self.current_trading_info.long_lot = int(row['買いロット数'])
+            self.current_trading_info.long_profit = float(row['買い損益'])
+            self.current_trading_info.long_trading = lt.LongTrading()    
+            self.current_trading_info.long_trading.total_amount_now = float(row['買い平均単価']) * int(row['買いロット数'])
+            self.current_trading_info.long_trading.number_now = int(row['買いロット数']) * int(row['ロットサイズ'])
+            self.current_trading_info.lot_size = int(row['ロットサイズ'])
+            self.current_trading_info.stock_code = row['銘柄コード']
+            self.current_trading_info.assets = float(row['総資産'])
+    
+            # csvファイルから不要な行を削除する
+            df = df[:number + 1]
+            df.to_csv(self.trading_history_csv, index=False, encoding="shift-jis")
+    
+        except Exception as e:
+            print(f"CSVファイルの読み込みに失敗しました: {e}")
 
-        if number > max:
-            print('指定した番号は上限を超えています。現時点は最大' + str(max) + '個前の取引まで戻すことが可能です。')
-            return
-        
-        if number <= 0:
-            print('1～' + str(max) + 'の整数を指定してください。')
-            return
-
-        for i in range(number):
-            self.__trading_info_history.pop()
-
-        # トレードの状態をリセットする
-        self.current_trading_info = copy.deepcopy(self.__trading_info_history[-1])
-
-        # csvファイルからも不要な行を削除する
-        df_trading_history_csv = pd.read_csv(self.trading_history_csv, encoding="shift-jis")
-        df_trading_history_csv = df_trading_history_csv[:-number]
-        df_trading_history_csv.to_csv(self.trading_history_csv, index=False, encoding="shift-jis")
-
-    def show_trading_history_in_stack(self):
+    def show_trading_history(self):
         """
         戻す可能な取引の一覧を表示する。
         Args:
@@ -261,27 +281,55 @@ class Trading:
         Returns:
             None
         """
-        print("※：0番は現在最新の状態です。")
+        print("※：番号が一番大きい項目は現在最新の状態です。")
+    
+        try:
+            df = pd.read_csv(self.trading_history_csv, encoding="shift-jis")
+            if df.empty:
+                print("取引履歴がありません。")
+                return
+    
+            rows_to_display = min(len(df), self.__MAX_LENGTH_OF_HISTORY)
+            for i, row in df.tail(rows_to_display).iterrows():
+                print(f"{i} : {row['銘柄コード']}  {row['取引日付']}  {row['売りロット数']}-{row['買いロット数']} (size: {row['ロットサイズ']})  ¥{row['総資産']:,.1f}")
+        except Exception as e:
+            print(f"CSVファイルの読み込みに失敗しました: {e}")
 
-        i = 0
-        for current_trading_info_tmp in reversed(self.__trading_info_history):
-            print(str(i) + ' : ' + current_trading_info_tmp.stock_code 
-                + '  ' + current_trading_info_tmp.trading_date.strftime('%Y-%m-%d') 
-                + '  ' + str(current_trading_info_tmp.short_lot) + '-' + str(current_trading_info_tmp.long_lot) 
-                + '  (size: ' +  str(current_trading_info_tmp.lot_size) + ')'
-                + '  ¥' + f'{current_trading_info_tmp.assets:,.1f}')
-            i = i + 1
-
-    def get_one_order_of_trading_history(self, number:int) -> cti.CurrentTradingInfoModel:
+    def get_one_order_of_trading_history(self, number: int) -> cti.CurrentTradingInfoModel:
         """
         指定した番号に該当した取引の情報を取得する。番号についてはshow_trading_history_in_stack()で確認できる。
         Args:
             number (int): 取得したい取引の個数（例：2を指定した場合は2個前の取引の情報を取得する）
         Returns:
-            None
+            cti.CurrentTradingInfoModel: 取引の情報
         """
-        trading_info = copy.deepcopy(self.__trading_info_history[-1-number])
-        return trading_info
+        try:
+            df = pd.read_csv(self.trading_history_csv, encoding="shift-jis")
+            if df.empty or number >= len(df):
+                print("指定された番号の取引履歴が存在しません。")
+                return None
+    
+            row = df.iloc[number]
+            trading_info = cti.CurrentTradingInfoModel()
+            trading_info.trading_date = datetime.strptime(row['取引日付'], '%Y-%m-%d').date()
+            trading_info.stock_price = float(row['株価'])
+            trading_info.short_lot = int(row['売りロット数'])
+            trading_info.short_profit = float(row['売り損益'])
+            trading_info.short_trading = st.ShortTrading()
+            trading_info.short_trading.total_amount_now = float(row['売り平均単価']) * int(row['売りロット数'])
+            trading_info.short_trading.number_now = int(row['売りロット数']) * int(row['ロットサイズ'])
+            trading_info.long_lot = int(row['買いロット数'])
+            trading_info.long_profit = float(row['買い損益'])
+            trading_info.long_trading = lt.LongTrading()    
+            trading_info.long_trading.total_amount_now = float(row['買い平均単価']) * int(row['買いロット数'])
+            trading_info.long_trading.number_now = int(row['買いロット数']) * int(row['ロットサイズ'])
+            trading_info.lot_size = int(row['ロットサイズ'])
+            trading_info.stock_code = row['銘柄コード']
+            trading_info.assets = float(row['総資産'])
+            return trading_info
+        except Exception as e:
+            print(f"CSVファイルの読み込みに失敗しました: {e}")
+            return None
 
     def take_memo_by_date(self, memo_date:date, memo:str) -> int:
         """

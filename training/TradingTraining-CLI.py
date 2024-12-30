@@ -382,11 +382,11 @@ if __name__ == "__main__":
             command_list = input_str.split()
             if command_list[1] == "show":
                 if len(command_list) == 2 or (len(command_list) == 3 and command_list[2] == "close"):
-                    trading_close.show_trading_history_in_stack()
+                    trading_close.show_trading_history()
                 elif len(command_list) == 3 and command_list[2] == "open":
-                    trading_next_open.show_trading_history_in_stack()
+                    trading_next_open.show_trading_history()
                 elif len(command_list) == 3 and command_list[2] == "opcl":
-                    trading_opcl.show_trading_history_in_stack()
+                    trading_opcl.show_trading_history()
                 else:
                     print('コマンド不正')
                 
