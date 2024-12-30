@@ -626,11 +626,16 @@ if __name__ == "__main__":
             if len(trading_operation) > 2:  
                 stock_price_str = trading_operation[2]
                 stock_price_arr = stock_price_str.split(':')
+                
                 if len(stock_price_arr) == 2:
-                    if stock_price_arr[0].isdigit():
+                    try:
                         stock_price['Close'] = float(stock_price_arr[0])
-                    if stock_price_arr[1].isdigit():
+                    except ValueError:
+                        pass  # 値を付与しない               
+                    try:
                         stock_price['Open'] = float(stock_price_arr[1])
+                    except ValueError:
+                        pass  # 値を付与しない
                 else:
                     print('注文株価指定の入力は不正です。')
                     continue
