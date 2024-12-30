@@ -10,12 +10,12 @@ class CurrentTradingInfoModel:
     stock_price:float               # 最新取引の株価(デフォルトは終値)
 
     short_lot:int                   # 売りロット数
-    short_order_number:int          # 最新取引における売りの株数。マイナスの場合は買い戻しの株数
+    # short_order_number:int          # 最新取引における売りの株数。マイナスの場合は買い戻しの株数 # TO DELETE
     short_profit:float              # 最新取引におけるショートトレードの損益
     short_trading:st.ShortTrading   # 売りのポジション情報（売り保有の総額、株数）
 
     long_lot:int                    # 買いロット数
-    long_order_number:int           # 最新取引における買いの株数。マイナスの場合は手仕舞う株数
+    # long_order_number:int           # 最新取引における買いの株数。マイナスの場合は手仕舞う株数 # TO DELETE
     long_profit:float               # 最新取引におけるロングトレードの損益
     long_trading:lt.LongTrading     # 買いのポジション情報（買い保有の総額、株数）
 
