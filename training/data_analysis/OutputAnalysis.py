@@ -2,16 +2,16 @@ import pandas as pd
 import math
 from pathlib import Path
 
-def aggregate_csv(csv_path:Path, output_to_file:bool, line_number:int=-1) -> str:
+def aggregate_csv(csv_path: Path, output_to_file: bool, line_number: int = -1) -> str:
     """
-        指定されたトレード履歴のCSVファイルに対して所定の規則で集計する。
-        Args:
-            csv_path (Path): 集計対象のCSVファイル
-            output_to_file (bool): 集計結果をCSVファイルに出力するか。Trueの場合は出力する。
-            line_number (int): 戻り値の文字列に含まれるサマリーの件数。ファイル出力には影響しない。マイナスの整数を指定した場合(デフォルトでもある)は全件表示になる。
-        Returns:
-            画面表示用の文字列（エラーメッセージの場合がある）
-        """
+    指定されたトレード履歴のCSVファイルに対して所定の規則で集計する。
+    Args:
+        csv_path (Path): 集計対象のCSVファイル
+        output_to_file (bool): 集計結果をCSVファイルに出力するか。Trueの場合は出力する。
+        line_number (int): 戻り値の文字列に含まれるサマリーの件数。ファイル出力には影響しない。マイナスの整数を指定した場合(デフォルトでもある)は全件表示になる。
+    Returns:
+        画面表示用の文字列（エラーメッセージの場合がある）
+    """
     
     if csv_path is None:
         return '対象ファイルが設定されていません。'
@@ -22,8 +22,13 @@ def aggregate_csv(csv_path:Path, output_to_file:bool, line_number:int=-1) -> str
     # 銘柄コードと取引日付と買いロット数と売りロット数と総資産の列だけを抽出する
     df = df[["銘柄コード", "取引日付", "ロットサイズ", "売りロット数", "買いロット数", "総資産"]]
     
-    # 銘柄コードとロットサイズが変わるかどうかを判定する列を追加する
-    df["グループ変更"] = (df["銘柄コード"].shift(1) != df["銘柄コード"]) | (df["ロットサイズ"].shift(1) != df["ロットサイズ"])
+    # 取引日付をdatetime型に変換する
+    df["取引日付"] = pd.to_datetime(df["取引日付"])
+
+    # 銘柄コードとロットサイズが変わるか、取引日付が前に戻るかどうかを判定する列を追加する
+    df["グループ変更"] = (df["銘柄コード"].shift(1) != df["銘柄コード"]) | \
+                        (df["ロットサイズ"].shift(1) != df["ロットサイズ"]) | \
+                        (df["取引日付"].shift(1) > df["取引日付"])
 
     # グループ変更があったときにグループ番号を増やす列を追加する
     df["グループ番号"] = df["グループ変更"].cumsum()
