@@ -237,17 +237,21 @@ class Trading:
         """
         トレードの状態をリセットする
         Args:
-            number (int): リセットする取引の個数
+            number (int): 指定した番号の取引の状態に戻す。負数を指定された場合は新しい取引からその絶対値の個数で取り消す処理になる。
         Returns:
             None
         """
         try:
             df = pd.read_csv(self.trading_history_csv, encoding="shift-jis")
-            if df.empty or number >= len(df):
+            if number < 0:
+                # 負数を指定された場合でもそれ以降同じ処理を行わせるために、DataFrameにある該当の項番に変換する
+                number = len(df) + number - 1
+
+            if df.empty or number >= len(df) or number < 0:
                 print("指定された番号の取引履歴が存在しません。")
                 return
     
-            # 最新の取引情報を取得する
+            # 該当の取引情報を取得する
             row = df.iloc[number]
             self.current_trading_info = cti.CurrentTradingInfoModel()
             self.current_trading_info.trading_date = datetime.strptime(row['取引日付'], '%Y-%m-%d').date()

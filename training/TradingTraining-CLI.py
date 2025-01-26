@@ -646,7 +646,7 @@ if __name__ == "__main__":
 
             if trading_close_message[0] == 'failure':
                 print(trading_close_message[1])
-                print('Info:大引注文に失敗のため、他の注文を実行しませんでした。')
+                print('Info:大引注文に失敗のため、他の注文も実行しませんでした。')
             else:
                 display_order_detail(trading_close, trading_close_message[1])
                 
@@ -656,7 +656,7 @@ if __name__ == "__main__":
 
                 if trading_next_open_messege[0] == 'failure':
                     print(trading_next_open_messege[1])
-                    trading_close.reset_trading_info(1)
+                    trading_close.reset_trading_info(-1)
                     print('Info:翌日寄付注文に失敗のため、大引注文を1取引分巻き戻し、組合せ注文を実行しませんでした。')
                 else:
                     display_order_detail(trading_next_open, trading_next_open_messege[1])
@@ -685,8 +685,8 @@ if __name__ == "__main__":
 
                     if trading_opcl_messege[0] == 'failure':
                         print(trading_opcl_messege[1])
-                        trading_close.reset_trading_info(1)
-                        trading_next_open.reset_trading_info(1)
+                        trading_close.reset_trading_info(-1)
+                        trading_next_open.reset_trading_info(-1)
                         print('Info:組合せ文に失敗のため、他の注文を1取引分巻き戻しました。')
                     else:
                         display_order_detail(trading_opcl, trading_opcl_messege[1])
