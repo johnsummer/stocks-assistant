@@ -35,4 +35,4 @@ class StockInfo:
 
         start_str = start_date.strftime('%Y-%m-%d')
         end_str = end_date.strftime('%Y-%m-%d')
-        self.stock_data_df = yf.download(code, start=start_str, end=end_str, interval = "1d")
+        self.stock_data_df = yf.download(code, start=start_str, end=end_str, interval = "1d", auto_adjust=False, multi_level_index=False)
