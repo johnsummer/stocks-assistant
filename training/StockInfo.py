@@ -48,8 +48,12 @@ class StockInfo:
         Returns:
             None
         """
+
         # 動的にパスを構築
-        path_pattern = f'input/data/tr/{data_type}/{code}*.csv'
+        base_dir = os.path.join('input', 'data', data_type)
+        path_pattern = os.path.join(base_dir, f'{code}*.csv')
+
+        # 該当ファイルを検索
         file_list = glob.glob(path_pattern)
 
         if not file_list:
@@ -58,11 +62,16 @@ class StockInfo:
         # ファイルの更新時刻で最新ファイルを選択
         latest_file = max(file_list, key=os.path.getmtime)
 
-        # CSVファイルを読み込み
-        df = pd.read_csv(latest_file)
+        df = None
 
         # TradingViewの前提でデータを処理する
         if data_type == 'trv':
+            # 必要な列名（読み込み時の小文字）
+            required_columns = ['time', 'open', 'high', 'low', 'close', 'volume']
+
+            # CSVファイルを読み込み
+            df = pd.read_csv(latest_file, usecols=lambda col: col.lower() in required_columns)
+
             # 'time'列をdatetime型に変換し、インデックスに設定
             df['time'] = pd.to_datetime(df['time'])
             df.set_index('time', inplace=True)
@@ -70,4 +79,5 @@ class StockInfo:
             # 列名の先頭文字を大文字に変換
             df.columns = [col.capitalize() for col in df.columns]
 
+        self.code = code
         self.stock_data_df = df
