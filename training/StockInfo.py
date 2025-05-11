@@ -3,6 +3,7 @@ from datetime import timedelta
 
 import glob
 import os
+import re
 import pandas as pd
 import yfinance as yf
 
@@ -78,6 +79,26 @@ class StockInfo:
 
             # 列名の先頭文字を大文字に変換
             df.columns = [col.capitalize() for col in df.columns]
-
-        self.code = code
+        
+        # 正規化した（Yahoo Finance形式にした）コードを株の銘柄コード情報として使う
+        self.code = self.__normalize_tse_code(code)
         self.stock_data_df = df
+
+    def __normalize_tse_code(self, code: str) -> str:
+        """
+        東証上場銘柄に対して証券コードを正規化する。
+        - TSE_XXXX → XXXX.T
+        - XXXX → XXXX.T
+        - XXXX.T → XXXX.T
+        - ただし、XXXX は4桁の数字に限る。それ以外は日本株ではないので、変換しないまま返す
+
+        Args:
+            code (str): 入力された証券コード
+
+        Returns:
+            str: 正規化されたコード（'XXXX.T'）
+        """
+        match = re.fullmatch(r'(TSE_)?(\d{4})(\.T)?', code)
+        if match:
+            return f"{match.group(2)}.T"
+        return code
