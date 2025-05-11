@@ -94,6 +94,7 @@ if __name__ == "__main__":
     parser.add_argument('-l', help='1ロットの株数。デフォルトは100株')
     parser.add_argument('-a', help='トレード用の想定金額(初期資産)。デフォルトは1000万(円)')
     parser.add_argument('-ro', '--reopen', help='トレード再開モードで起動する', action='store_true')
+    parser.add_argument('-i', '--input', help='データ読込元。abcを指定すると、input/data/abcから読み込まれる')
 
     args = parser.parse_args()
 
@@ -105,6 +106,7 @@ if __name__ == "__main__":
     assets_close = 10000000
     assets_open = assets_close
     assets_opcl = assets_close    # 翌日寄付で注文・大引で手仕舞いの方式の資産
+    input_data = 'yf' if args.input == None else args.input   # デフォルトではyfinanceからデータを取得する
 
     mode = ''
     code = args.code
@@ -225,9 +227,15 @@ if __name__ == "__main__":
         print('「銘柄可変」モードでトレードを始めます。')
         code = None
     else:
-        print('データ読み込み中。。。')
-        stock_info = si.StockInfo(code, start_date, end_date)
-        print('データ読み込み完了。')
+        try:
+            print('データ読み込み中。。。')
+            if input_data == 'yf':
+                stock_info = si.StockInfo(code, start_date, end_date)
+            else:
+                stock_info = si.StockInfo(code, input_data)
+            print('データ読み込み完了。')
+        except FileNotFoundError as e:
+            print(f"ファイルが見つかりませんでした: {e}")
 
         # 取得できた株価データの範囲を確認するためにCLIでDataFrameを表示する
         stock_data = stock_info.stock_data_df
@@ -326,9 +334,16 @@ if __name__ == "__main__":
                         continue
 
                     code = command_list[1]
-                    print('データ読み込み中。。。')
-                    stock_info = si.StockInfo(code, start_date, end_date)
-                    print('データ読み込み完了。')
+                    try:
+                        print('データ読み込み中。。。')
+                        if input_data == 'yf':
+                            stock_info = si.StockInfo(code, start_date, end_date)
+                        else:
+                            stock_info = si.StockInfo(code, input_data)
+                        print('データ読み込み完了。')
+                    except FileNotFoundError as e:
+                        print(f"ファイルが見つかりませんでした: {e}")
+                        continue
 
                     # 取得できた株価データの範囲を確認するためにCLIでDataFrameを表示する
                     stock_data = stock_info.stock_data_df

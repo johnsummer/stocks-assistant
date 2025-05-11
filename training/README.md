@@ -14,6 +14,16 @@
   ```
   python TradingTraining-CLI.py changeable
   ```
+- TradingViewからエクスポートしたCSVファイルから株価データを読み込むモードでトレードする
+  ```
+  python TradingTraining-CLI.py -i trv
+  ```
+  または
+  ```
+  python TradingTraining-CLI.py --input trv
+  ```
+  - 何も指定しない場合はインターネット（yfinance）から読み込むようになる（yfinanceは最近不安定なため、使えない可能性がある）
+  - TradingViewのCSVファイルは`input/data/trv`フォルダに格納される前提とする
 - その他のパラメータについては以下のコマンドで確認できる
   ```
   python TradingTraining-CLI.py -h
