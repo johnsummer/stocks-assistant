@@ -94,19 +94,19 @@ if __name__ == "__main__":
     parser.add_argument('-l', help='1ロットの株数。デフォルトは100株')
     parser.add_argument('-a', help='トレード用の想定金額(初期資産)。デフォルトは1000万(円)')
     parser.add_argument('-ro', '--reopen', help='トレード再開モードで起動する', action='store_true')
-    parser.add_argument('-i', '--input', help='データ読込元。abcを指定すると、input/data/abcから読み込まれる')
+    parser.add_argument('-i', '--input', help='データの読込元。loc:ローカルファイル(TradingView/チャートギャラリー), yf:yfinance')
 
     args = parser.parse_args()
 
     # 各引数のデフォルト値を定義する
-    start_date_str = '20130101' if args.s == None else args.s
+    start_date_str = '20010101' if args.s == None else args.s
     end_date = dt.datetime.now().date() if args.e == None else dt.datetime.strptime(args.e, '%Y%m%d').date()
     lot_size = 100 if args.l == None else int(args.l)
 
     assets_close = 10000000
     assets_open = assets_close
     assets_opcl = assets_close    # 翌日寄付で注文・大引で手仕舞いの方式の資産
-    input_data = 'yf' if args.input == None else args.input   # デフォルトではyfinanceからデータを取得する
+    input_data = 'loc' if args.input == None else args.input   # デフォルトではローカルファイルからデータを取得する
 
     mode = ''
     code = args.code
@@ -229,13 +229,10 @@ if __name__ == "__main__":
     else:
         try:
             print('データ読み込み中。。。')
-            if input_data == 'yf':
-                stock_info = si.StockInfo(code, start_date, end_date)
-            else:
-                stock_info = si.StockInfo(code, input_data)
+            stock_info = si.StockInfo(code, start_date, end_date, input_data)
             print('データ読み込み完了。')
-        except FileNotFoundError as e:
-            print(f"ファイルが見つかりませんでした: {e}")
+        except ValueError as e:
+            print(e)
 
         # 取得できた株価データの範囲を確認するためにCLIでDataFrameを表示する
         stock_data = stock_info.stock_data_df
@@ -336,13 +333,10 @@ if __name__ == "__main__":
                     code = command_list[1]
                     try:
                         print('データ読み込み中。。。')
-                        if input_data == 'yf':
-                            stock_info = si.StockInfo(code, start_date, end_date)
-                        else:
-                            stock_info = si.StockInfo(code, input_data)
+                        stock_info = si.StockInfo(code, start_date, end_date, input_data)
                         print('データ読み込み完了。')
-                    except FileNotFoundError as e:
-                        print(f"ファイルが見つかりませんでした: {e}")
+                    except ValueError as e:
+                        print(e)
                         continue
 
                     # 取得できた株価データの範囲を確認するためにCLIでDataFrameを表示する

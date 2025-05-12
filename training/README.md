@@ -2,6 +2,8 @@
 
 ## 起動
 
+### コマンド
+
 - 特定の銘柄コードだけトレードしたい場合、以下のコマンドで起動する（単独モード）
   ```
   python TradingTraining-CLI.py [銘柄コード]
@@ -14,20 +16,19 @@
   ```
   python TradingTraining-CLI.py changeable
   ```
-- TradingViewからエクスポートしたCSVファイルから株価データを読み込むモードでトレードする
-  ```
-  python TradingTraining-CLI.py -i trv
-  ```
-  または
-  ```
-  python TradingTraining-CLI.py --input trv
-  ```
-  - 何も指定しない場合はインターネット（yfinance）から読み込むようになる（yfinanceは最近不安定なため、使えない可能性がある）
-  - TradingViewのCSVファイルは`input/data/trv`フォルダに格納される前提とする
 - その他のパラメータについては以下のコマンドで確認できる
   ```
   python TradingTraining-CLI.py -h
   ```
+
+### データ用意
+
+- デフォルトではTradingView、またはチャートギャラリーからエクスポートしたファイルから株価データを読み込むモードでトレードする。
+  - 起動時に`-i yf`を指定すると、インターネット（yfinance）から読み込むようになる（yfinanceは最近不安定なため、使えない可能性がある）
+  - それぞれのファイルは以下の通りに起動前に格納する必要がある
+    - TradingView：`input/data/trv`
+    - チャートギャラリー：`input/data/chg`
+- それぞれのデータの形式、エクスポートの仕方についてはそれぞれの公式サイトなどを参照してください。
 
 ## 起動後の操作コマンド
 
