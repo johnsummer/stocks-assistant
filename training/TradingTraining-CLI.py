@@ -233,12 +233,10 @@ if __name__ == "__main__":
         print('「銘柄可変」モードでトレードを始めます。')
         code = None
     else:
-        try:
-            print('データ読み込み中。。。')
-            stock_info = si.StockInfo(code, start_date, end_date, input_data)
-            print('データ読み込み完了。')
-        except ValueError as e:
-            print(e)
+
+        print('データ読み込み中。。。')
+        stock_info = si.StockInfo(code, start_date, end_date, input_data)
+        print('データ読み込み完了。')
 
         # 取得できた株価データの範囲を確認するためにCLIでDataFrameを表示する
         stock_data = stock_info.stock_data_df
@@ -337,13 +335,10 @@ if __name__ == "__main__":
                         continue
 
                     code = command_list[1]
-                    try:
-                        print('データ読み込み中。。。')
-                        stock_info = si.StockInfo(code, start_date, end_date, input_data)
-                        print('データ読み込み完了。')
-                    except ValueError as e:
-                        print(e)
-                        continue
+
+                    print('データ読み込み中。。。')
+                    stock_info = si.StockInfo(code, start_date, end_date, input_data)
+                    print('データ読み込み完了。')
 
                     # 取得できた株価データの範囲を確認するためにCLIでDataFrameを表示する
                     stock_data = stock_info.stock_data_df
@@ -415,6 +410,12 @@ if __name__ == "__main__":
                 number = int(command_list[2])
 
                 trading_info = trading_close.get_one_order_of_trading_history(number)
+
+                # 東証銘柄の場合は証券コードをyfinance形式に正規化してから比較する
+                match = re.fullmatch(r'(TSE_)?(\d{4})(\.T)?', code)
+                if match:
+                    code = f"{match.group(2)}.T"
+
                 if trading_info.stock_code != code:
                     print('異なる銘柄コードの取引履歴に戻すことができません。')
                     continue

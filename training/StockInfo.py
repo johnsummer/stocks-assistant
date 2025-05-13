@@ -40,6 +40,16 @@ class StockInfo:
 
         # データの取得元に応じて処理を分岐
         if data_type == 'loc':
+            # 東証の場合は証券コードを整形する（TradingView形式の"TSE_" + 4桁に変換）
+            code_num = None
+            if code.endswith(".T"):
+                code_num = code[:-2]
+            elif code.isdigit() and len(code) == 4:
+                code_num = code
+
+            if code_num is not None:
+                code = f"TSE_{code_num}"
+
             # ローカルファイルから読み込む
             try:
                 self.stock_data_df = self.__load_trv_csv(code)
@@ -66,7 +76,8 @@ class StockInfo:
 
     def __normalize_tse_code(self, code: str) -> str:
         """
-        東証上場銘柄に対して証券コードを正規化する。
+        東証銘柄に対して証券コードをyfinance形式に正規化する。
+        CSVに出力する際は、東証銘柄は基本的にyfinance形式のコードに統一する。
         - TSE_XXXX → XXXX.T
         - XXXX → XXXX.T
         - XXXX.T → XXXX.T
@@ -88,25 +99,14 @@ class StockInfo:
         指定された銘柄コードに対応するTradingViewのCSVファイルを読み込み、DataFrame を返す。
 
         Args:
-            code (str): 証券コード（"TSE_XXXX", "XXXX.T", "XXXX" 形式のいずれか）
+            code (str): 証券コード（TradingView形式。例：東証の場合は"TSE_XXXX"）
 
         Returns:
             pd.DataFrame: 整形済みの DataFrame（time をインデックス）
         """
-        # 証券コードの統一（4桁 + ".T" に変換）
-        if code.startswith("TSE_"):
-            code_num = code[4:]
-        elif code.endswith(".T"):
-            code_num = code[:-2]
-        else:
-            code_num = code
-
-        if not code_num.isdigit() or len(code_num) != 4:
-            raise ValueError(f"不正な銘柄コード形式: {code}")
-
         # 動的にパスを構築
         base_dir = os.path.join('input', 'data', 'trv')
-        path_pattern = os.path.join(base_dir, f'TSE_{code_num}*.csv')
+        path_pattern = os.path.join(base_dir, f'{code}*.csv')
 
         # 該当ファイルを検索
         file_list = glob.glob(path_pattern)
@@ -139,23 +139,12 @@ class StockInfo:
         指定された銘柄コードに対応するチャートギャラリーのテキストファイルを読み込み、DataFrame を返す。
 
         Args:
-            code (str): 証券コード（"TSE_XXXX", "XXXX.T", "XXXX" 形式のいずれか）
+            code (str): 証券コード（TradingView形式。例：東証の場合は"TSE_XXXX"）
 
         Returns:
             pd.DataFrame: 整形済みの DataFrame（time をインデックス）
         """
-        # 証券コードの統一（4桁 + ".T" に変換）
-        if code.startswith("TSE_"):
-            code_num = code[4:]
-        elif code.endswith(".T"):
-            code_num = code[:-2]
-        else:
-            code_num = code
-
-        if not code_num.isdigit() or len(code_num) != 4:
-            raise ValueError(f"不正な銘柄コード形式: {code}")
-
-        filename = f"TSE_{code_num}.txt"
+        filename = f"{code}.txt"
         filepath = os.path.join("input", "data", "chg", filename)
 
         if not os.path.isfile(filepath):
