@@ -127,6 +127,12 @@ if __name__ == "__main__":
 
     if args.reopen:
         # トレード再開の場合、各引数の値を上書きする
+
+        # 日本株の場合、銘柄コードはXXXX.T形式に整形する
+        match = re.fullmatch(r'(TSE_)?(\d{4})(\.T)?', code)
+        if match:
+            code=f"{match.group(2)}.T"
+
         csv_loader = cl.CSVLoader(code)
         reopen_choices = list(csv_loader.reopen_trading_items.values())
 
