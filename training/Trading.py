@@ -133,7 +133,7 @@ class Trading:
                     return RETURN_FAIL, "入力された日付のデータはない。その日は祝日か、取得期間外の日付かもしれない。"
                 
                 if stock_price < 0:
-                    stock_price = float(stock_data['Close'])
+                    stock_price = float(stock_data['Close'].iloc[0])
             else:
                 # 翌日寄付での注文
                 trading_date = trading_date + timedelta(days=1)
@@ -151,7 +151,7 @@ class Trading:
                     return RETURN_FAIL, "入力された日付の翌営業日のデータはない。取得期間外の日付かもしれない。"
                 
                 if stock_price < 0:
-                    stock_price = float(stock_data['Open'])
+                    stock_price = float(stock_data['Open'].iloc[0])
             # print(stock_price)
 
             # ショート注文の準備
