@@ -499,7 +499,7 @@ if __name__ == "__main__":
                         print('入力された日付のデータはありません。その日は祝日か、取得期間外の日付かもしれません。')
                         continue
 
-                    stock_price = float(stock_data['Close']) # 計算基準日の終値で計算する（ロット再計算しようと思う時、翌日の始値がわからないので）
+                    stock_price = float(stock_data['Close'].iloc[0]) # 計算基準日の終値で計算する（ロット再計算しようと思う時、翌日の始値がわからないので）
                     assets = min(trading_close.current_trading_info.assets, 
                                  trading_next_open.current_trading_info.assets, 
                                  trading_opcl.current_trading_info.assets)

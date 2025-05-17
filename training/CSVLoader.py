@@ -36,7 +36,7 @@ class CSVLoader:
             last_row = df_csv.tail(1)   # TODO タイトル行しかないときのチェック
             last_code = last_row['銘柄コード'].item()
             last_trading_date = last_row['取引日付'].item().replace('-', '')
-            assets = float(last_row['総資産'])
+            assets = float(last_row['総資産'].iloc[0])
 
             if file_name_objects[2] + file_name_objects[3] + file_name_objects[4] not in self.reopen_trading_items:
                 reopen_trading_info = rti.ReopenTradingInfo(last_code, file_name_objects[3], file_name_objects[4], last_trading_date)
