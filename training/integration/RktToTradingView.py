@@ -3,6 +3,7 @@ import re
 import pandas as pd
 from collections import defaultdict
 from pandas.tseries.offsets import BDay
+import argparse
 
 def _get_target_files(base_folder, start_date, end_date):
     """
@@ -101,11 +102,12 @@ def process_trade_history(target_code, start_date, end_date):
 
 # 動作確認用のコード
 if __name__ == "__main__":
-    # ユーザー入力を受け取る
-    target_code = int(input("銘柄コードを入力してください: "))
-    start_date = input("開始日 (YYYYMMDD) を入力してください: ")
-    end_date = input("終了日 (YYYYMMDD) を入力してください: ")
+    parser = argparse.ArgumentParser(description="指定した銘柄コードと期間に基づく建玉履歴を処理します")
+    parser.add_argument("-c", "--code", type=int, required=True, help="銘柄コード")
+    parser.add_argument("-s", "--start_date", type=str, required=True, help="開始日 (YYYYMMDD)")
+    parser.add_argument("-e", "--end_date", type=str, required=True, help="終了日 (YYYYMMDD)")
+    args = parser.parse_args()
     
     # データ処理を実行し、結果を出力
-    output = process_trade_history(target_code, start_date, end_date)
+    output = process_trade_history(args.target_code, args.start_date, args.end_date)
     print(output)
