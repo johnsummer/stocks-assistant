@@ -88,6 +88,18 @@
   - `output`を付けると表示されたサマリーをcsvファイルに出力し、ファイルを開く。付けない場合はコマンドプロンプトで表示するだけ。
   - `output`を付ける場合は`close/open/opcl`の省略はできない。
 
+## 外部データ・ツール連携
+
+### 楽天証券(MarketSpeed II)の注文照合結果をTradingView用に変換
+
+楽天証券の取引ツール「MarketSpeed II」の注文照合画面からダウンロードしたCSV（`input`フォルダに配置した`trading_history_rkt_*.csv`）を、TradingViewのチャート上に建玉の推移を表示するための文字列に変換・出力します。
+
+- 実行コマンド
+  ```
+  python training/integration/RktToTradingView.py -c <銘柄コード> -s <YYYYMMDD形式の開始日> -e <YYYYMMDD形式の終了日>
+  ```
+- 出力された文字列をTradingViewで表示するためのインジケーターは`tradingview/DisplayOrders`に記載されています。
+
 ## その他
 
 ### 日本株の銘柄コードのフォーマット
